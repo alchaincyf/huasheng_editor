@@ -325,6 +325,102 @@
     ::-webkit-scrollbar-thumb:hover {
       background: var(--color-tertiary);
     }
+
+    /* 移动端响应式布局 */
+    @media (max-width: 768px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr;
+        height: 100vh;
+      }
+
+      .top-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-md);
+        padding: var(--space-md);
+      }
+
+      .logo {
+        font-size: 16px;
+        text-align: center;
+      }
+
+      .style-control {
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+
+      .style-control label {
+        display: none;
+      }
+
+      .style-selector {
+        width: 100%;
+      }
+
+      .star-btn {
+        display: none;
+      }
+
+      .copy-btn {
+        width: 100%;
+        padding: var(--space-md);
+      }
+
+      .editor-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        max-height: 40vh;
+      }
+
+      .editor-toolbar {
+        flex-wrap: wrap;
+        padding: var(--space-sm) var(--space-md);
+      }
+
+      .editor-toolbar span {
+        display: none;
+      }
+
+      .markdown-input-container {
+        padding: var(--space-sm);
+      }
+
+      .markdown-input {
+        font-size: 13px;
+        padding: var(--space-md);
+      }
+
+      .preview-panel {
+        height: auto;
+      }
+
+      .preview-container {
+        padding: var(--space-lg) var(--space-md);
+      }
+
+      .toast {
+        left: var(--space-md);
+        right: var(--space-md);
+        bottom: var(--space-md);
+      }
+    }
+
+    /* 平板端优化 */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      #app {
+        max-width: 100%;
+      }
+
+      .top-nav {
+        padding: var(--space-md) var(--space-lg);
+      }
+
+      .preview-container {
+        padding: var(--space-xl) var(--space-lg);
+      }
+    }
   </style>
 </head>
 <body>

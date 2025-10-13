@@ -138,11 +138,234 @@ const editorApp = createApp({
         });
       });
 
+      // 处理图片网格布局
+      this.groupConsecutiveImages(doc);
+
       const container = doc.createElement('div');
       container.setAttribute('style', style.container);
       container.innerHTML = doc.body.innerHTML;
 
       return container.outerHTML;
+    },
+
+    groupConsecutiveImages(doc) {
+      const body = doc.body;
+      const children = Array.from(body.children);
+
+      let imagesToProcess = [];
+
+      // 找出所有连续的图片元素
+      children.forEach((child, index) => {
+        if (child.tagName === 'P' && child.children.length === 1 && child.children[0].tagName === 'IMG') {
+          // 段落中只包含图片
+          imagesToProcess.push({ element: child, img: child.children[0], index });
+        } else if (child.tagName === 'IMG') {
+          // 直接是图片元素
+          imagesToProcess.push({ element: child, img: child, index });
+        }
+      });
+
+      // 按索引分组连续的图片
+      let groups = [];
+      let currentGroup = [];
+
+      imagesToProcess.forEach((item, i) => {
+        if (i === 0) {
+          currentGroup.push(item);
+        } else {
+          // 检查是否连续（索引差值为1或之间只有空白节点）
+          const prevIndex = imagesToProcess[i - 1].index;
+          const currIndex = item.index;
+          const isContinuous = currIndex - prevIndex <= 2; // 允许之间有一个空白节点
+
+          if (isContinuous) {
+            currentGroup.push(item);
+          } else {
+            if (currentGroup.length > 0) {
+              groups.push([...currentGroup]);
+            }
+            currentGroup = [item];
+          }
+        }
+      });
+
+      if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+      }
+
+      // 对每组图片进行处理
+      groups.forEach(group => {
+        // 只有2张及以上的图片才需要网格布局
+        if (group.length < 2) return;
+
+        const imageCount = group.length;
+        const firstElement = group[0].element;
+
+        // 创建网格容器
+        const gridContainer = doc.createElement('div');
+        gridContainer.setAttribute('class', 'image-grid');
+
+        // 根据图片数量决定列数
+        let columns;
+        if (imageCount === 2) {
+          columns = 2;
+        } else if (imageCount === 3) {
+          columns = 3;
+        } else if (imageCount === 4) {
+          columns = 2;
+        } else {
+          columns = 3;
+        }
+
+        // 设置网格容器样式
+        gridContainer.setAttribute('style', `
+          display: grid;
+          grid-template-columns: repeat(${columns}, 1fr);
+          gap: 8px;
+          margin: 20px auto;
+          max-width: 100%;
+        `.trim());
+
+        // 将图片添加到网格容器中
+        group.forEach(item => {
+          const imgWrapper = doc.createElement('div');
+          imgWrapper.setAttribute('style', `
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            overflow: hidden;
+            min-height: 120px;
+            max-height: 360px;
+          `.trim());
+
+          const img = item.img.cloneNode(true);
+          // 修改图片样式以适应网格
+          img.setAttribute('style', `
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+          `.trim());
+
+          imgWrapper.appendChild(img);
+          gridContainer.appendChild(imgWrapper);
+        });
+
+        // 替换原来的图片元素
+        firstElement.parentNode.insertBefore(gridContainer, firstElement);
+
+        // 删除原来的图片元素
+        group.forEach(item => {
+          item.element.parentNode.removeChild(item.element);
+        });
+      });
+    },
+
+    convertGridToTable(doc) {
+      // 找到所有的图片网格容器
+      const imageGrids = doc.querySelectorAll('.image-grid');
+
+      imageGrids.forEach(grid => {
+        // 获取网格的列数（从 grid-template-columns 样式中提取）
+        const gridStyle = grid.getAttribute('style') || '';
+        const columnsMatch = gridStyle.match(/grid-template-columns:\s*repeat\((\d+),/);
+        const columns = columnsMatch ? parseInt(columnsMatch[1]) : 3;
+
+        // 根据列数设置不同的容器高度
+        let containerHeight;
+        if (columns === 2) {
+          containerHeight = '220px';  // 2列布局稍高
+        } else if (columns === 3) {
+          containerHeight = '180px';  // 3列布局稍低
+        } else {
+          containerHeight = '200px';  // 默认高度
+        }
+
+        // 获取所有图片包装器
+        const imgWrappers = Array.from(grid.children);
+
+        // 创建 table 元素
+        const table = doc.createElement('table');
+        table.setAttribute('style', `
+          width: 100% !important;
+          border-collapse: collapse !important;
+          margin: 20px auto !important;
+          table-layout: fixed !important;
+          border: none !important;
+          background: transparent !important;
+        `.trim());
+
+        // 计算需要多少行
+        const rows = Math.ceil(imgWrappers.length / columns);
+
+        // 创建表格行
+        for (let i = 0; i < rows; i++) {
+          const tr = doc.createElement('tr');
+
+          // 创建表格单元格
+          for (let j = 0; j < columns; j++) {
+            const index = i * columns + j;
+            const td = doc.createElement('td');
+
+            td.setAttribute('style', `
+              padding: 4px !important;
+              vertical-align: top !important;
+              width: ${100 / columns}% !important;
+              border: none !important;
+              background: transparent !important;
+            `.trim());
+
+            // 如果有对应的图片，添加到单元格
+            if (index < imgWrappers.length) {
+              const imgWrapper = imgWrappers[index];
+              const img = imgWrapper.querySelector('img');
+
+              if (img) {
+                // 创建一个新的包装 div - 设置固定高度确保一致性
+                const wrapper = doc.createElement('div');
+                wrapper.setAttribute('style', `
+                  width: 100% !important;
+                  height: ${containerHeight} !important;
+                  text-align: center !important;
+                  background-color: transparent !important;
+                  border-radius: 4px !important;
+                  overflow: hidden !important;
+                  padding: 4px !important;
+                  display: flex !important;
+                  align-items: center !important;
+                  justify-content: center !important;
+                  position: relative !important;
+                `.trim());
+
+                // 克隆图片并设置样式 - 使用 object-fit 保持比例
+                const newImg = img.cloneNode(true);
+                newImg.setAttribute('style', `
+                  max-width: 100% !important;
+                  max-height: 100% !important;
+                  width: auto !important;
+                  height: auto !important;
+                  display: block !important;
+                  object-fit: contain !important;
+                  border-radius: 4px !important;
+                `.trim());
+
+                wrapper.appendChild(newImg);
+                td.appendChild(wrapper);
+              }
+            }
+
+            tr.appendChild(td);
+          }
+
+          table.appendChild(tr);
+        }
+
+        // 替换网格为 table
+        grid.parentNode.replaceChild(table, grid);
+      });
     },
 
     async copyToClipboard() {
@@ -154,6 +377,9 @@ const editorApp = createApp({
       try {
         const parser = new DOMParser();
         const doc = parser.parseFromString(this.renderedContent, 'text/html');
+
+        // 将图片网格转换为 table 布局（公众号兼容）
+        this.convertGridToTable(doc);
 
         // 处理图片：转为 Base64
         const images = doc.querySelectorAll('img');
