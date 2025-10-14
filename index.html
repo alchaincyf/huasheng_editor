@@ -250,9 +250,33 @@
       color: var(--color-accent);
     }
 
+    .upload-hints {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
     .upload-hint {
       font-size: 12px;
       color: var(--color-tertiary);
+    }
+
+    .feishu-hint {
+      font-size: 11px;
+      color: var(--color-tertiary);
+      line-height: 1.4;
+    }
+
+    .feishu-hint a {
+      color: var(--color-accent);
+      text-decoration: none;
+      border-bottom: 1px dashed var(--color-accent);
+      transition: all 120ms;
+    }
+
+    .feishu-hint a:hover {
+      border-bottom-style: solid;
+      opacity: 0.8;
     }
 
     .char-count {
@@ -502,6 +526,15 @@
         justify-content: center;
       }
 
+      .upload-hints {
+        align-items: center;
+        text-align: center;
+      }
+
+      .feishu-hint {
+        font-size: 10px;
+      }
+
       .preview-header {
         padding: var(--space-xs) var(--space-sm);
       }
@@ -627,7 +660,18 @@
               <span>上传 MD 文件</span>
               <input type="file" id="file-upload" accept=".md,.markdown" @change="handleFileUpload" style="display: none;">
             </label>
-            <span class="upload-hint">支持 .md / .markdown 文件</span>
+            <div class="upload-hints">
+              <span class="upload-hint">支持 .md / .markdown 文件</span>
+              <span class="feishu-hint">
+                飞书用户推荐安装
+                <a href="https://chromewebstore.google.com/detail/cloud-document-converter/ehkomhhcinhikfddnmklbloahaakploh"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  Cloud Document Converter
+                </a>
+                插件
+              </span>
+            </div>
           </div>
           <div class="char-count">
             {{ markdownInput.length }} 字符
