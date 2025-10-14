@@ -18,7 +18,8 @@ const editorApp = createApp({
         message: '',
         type: 'success'
       },
-      md: null
+      md: null,
+      STYLES: STYLES  // 将样式对象暴露给模板
     };
   },
 
@@ -274,15 +275,6 @@ const editorApp = createApp({
         const columnsMatch = gridStyle.match(/grid-template-columns:\s*repeat\((\d+),/);
         const columns = columnsMatch ? parseInt(columnsMatch[1]) : 3;
 
-        // 根据列数设置不同的容器高度
-        let containerHeight;
-        if (columns === 2) {
-          containerHeight = '220px';  // 2列布局稍高
-        } else if (columns === 3) {
-          containerHeight = '180px';  // 3列布局稍低
-        } else {
-          containerHeight = '200px';  // 默认高度
-        }
 
         // 获取所有图片包装器
         const imgWrappers = Array.from(grid.children);
@@ -324,35 +316,57 @@ const editorApp = createApp({
               const img = imgWrapper.querySelector('img');
 
               if (img) {
-                // 创建一个新的包装 div - 设置固定高度确保一致性
+                // 根据列数设置不同的图片最大高度 - 确保单行最高360px
+                let imgMaxHeight;
+                let containerHeight;
+                if (columns === 2) {
+                  imgMaxHeight = '340px';  // 2列布局单张最高340px（留出padding空间）
+                  containerHeight = '360px';  // 容器高度360px
+                } else if (columns === 3) {
+                  imgMaxHeight = '340px';  // 3列布局单张最高340px
+                  containerHeight = '360px';  // 容器高度360px
+                } else {
+                  imgMaxHeight = '340px';  // 默认高度340px
+                  containerHeight = '360px';  // 容器高度360px
+                }
+
+                // 创建一个新的包装 div - 添加背景和居中样式（使用table-cell方式，更兼容）
                 const wrapper = doc.createElement('div');
                 wrapper.setAttribute('style', `
                   width: 100% !important;
                   height: ${containerHeight} !important;
                   text-align: center !important;
-                  background-color: transparent !important;
+                  background-color: #f5f5f5 !important;
                   border-radius: 4px !important;
+                  padding: 10px !important;
+                  box-sizing: border-box !important;
                   overflow: hidden !important;
-                  padding: 4px !important;
-                  display: flex !important;
-                  align-items: center !important;
-                  justify-content: center !important;
-                  position: relative !important;
+                  display: table !important;
                 `.trim());
 
-                // 克隆图片并设置样式 - 使用 object-fit 保持比例
+                // 创建内部居中容器
+                const innerWrapper = doc.createElement('div');
+                innerWrapper.setAttribute('style', `
+                  display: table-cell !important;
+                  vertical-align: middle !important;
+                  text-align: center !important;
+                `.trim());
+
+                // 克隆图片并直接设置最大高度
                 const newImg = img.cloneNode(true);
                 newImg.setAttribute('style', `
-                  max-width: 100% !important;
-                  max-height: 100% !important;
+                  max-width: calc(100% - 20px) !important;
+                  max-height: ${imgMaxHeight} !important;
                   width: auto !important;
                   height: auto !important;
-                  display: block !important;
-                  object-fit: contain !important;
+                  display: inline-block !important;
+                  margin: 0 auto !important;
                   border-radius: 4px !important;
+                  object-fit: contain !important;
                 `.trim());
 
-                wrapper.appendChild(newImg);
+                innerWrapper.appendChild(newImg);
+                wrapper.appendChild(innerWrapper);
                 td.appendChild(wrapper);
               }
             }
@@ -579,6 +593,12 @@ const editorApp = createApp({
 
     isStyleStarred(styleKey) {
       return this.starredStyles.includes(styleKey);
+    },
+
+    isRecommended(styleKey) {
+      // 推荐的样式
+      const recommended = ['wechat-anthropic', 'wechat-ft', 'wechat-nyt', 'wechat-tech'];
+      return recommended.includes(styleKey);
     },
 
     toggleStarStyle(styleKey) {

@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>公众号 Markdown 编辑器</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.svg">
+  <link rel="mask-icon" href="favicon.svg" color="#0066FF">
+
   <!-- Markdown 渲染库 -->
   <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
 
@@ -24,6 +29,7 @@
       --color-bg: #FAFAFA;
       --color-surface: #FFF;
       --color-border: #E0E0E0;
+      --color-light-border: #F0F0F0;
       --space-unit: 8px;
       --space-xs: calc(var(--space-unit) * 1);
       --space-sm: calc(var(--space-unit) * 2);
@@ -52,70 +58,247 @@
     #app {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto auto 1fr;
       height: 100vh;
       max-width: 1600px;
       margin: 0 auto;
       background: var(--color-surface);
     }
 
-    /* 顶部工具栏 */
-    .top-nav {
+    /* 顶部栏 */
+    .header {
       grid-column: 1 / -1;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: var(--space-lg) var(--space-xl);
+      padding: var(--space-sm) var(--space-lg);
       border-bottom: 1px solid var(--color-border);
       background: var(--color-surface);
-      gap: var(--space-lg);
     }
 
     .logo {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 600;
       color: var(--color-primary);
       letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .style-control {
+    /* 样式选择区 - 横向滚动 */
+    .styles-section {
+      grid-column: 1 / -1;
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      overflow: hidden;
+    }
+
+    .styles-container {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: 0 var(--space-lg);
+    }
+
+    .styles-label {
+      font-size: 12px;
+      color: var(--color-tertiary);
+      font-weight: 500;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .styles-scroll-wrapper {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      padding: 2px 0;
+    }
+
+    .styles-scroll-wrapper::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .styles-scroll-wrapper::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: 3px;
+    }
+
+    .styles-list {
+      display: flex;
+      gap: 8px;
+      padding: 0 2px;
+    }
+
+    .style-card {
+      padding: 6px 12px;
+      border: 1px solid var(--color-light-border);
+      border-radius: 6px;
+      background: var(--color-surface);
+      cursor: pointer;
+      transition: all 120ms;
+      font-size: 12px;
+      color: var(--color-primary);
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+
+    .style-card:hover {
+      border-color: var(--color-accent);
+      background: var(--color-bg);
+    }
+
+    .style-card.active {
+      border-color: var(--color-accent);
+      background: var(--color-accent);
+      color: var(--color-surface);
+      font-weight: 500;
+    }
+
+    .style-card.recommended::before {
+      content: '✨';
+      font-size: 10px;
+      margin-right: 2px;
+    }
+
+    .style-card.starred::after {
+      content: '⭐';
+      font-size: 10px;
+      margin-left: 2px;
+    }
+
+    /* 主内容区 */
+    .main-content {
+      display: contents;
+    }
+
+    /* 编辑器面板 */
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--color-border);
+      overflow: hidden;
+    }
+
+    .markdown-input-container {
+      flex: 1;
+      overflow: hidden;
+      padding: var(--space-md);
+      background: var(--color-surface);
+    }
+
+    .markdown-input {
+      width: 100%;
+      height: 100%;
+      padding: var(--space-lg);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      background: var(--color-surface);
+      color: var(--color-primary);
+    }
+
+    .markdown-input:focus {
+      outline: 2px solid var(--color-accent);
+      outline-offset: -2px;
+    }
+
+    /* 编辑器底部工具栏 */
+    .editor-footer {
+      padding: var(--space-sm) var(--space-lg);
+      border-top: 1px solid var(--color-border);
+      background: var(--color-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .upload-section {
       display: flex;
       align-items: center;
       gap: var(--space-md);
     }
 
-    .style-control label {
+    .upload-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      cursor: pointer;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      background: var(--color-surface);
+      color: var(--color-secondary);
       font-size: 13px;
+      transition: all 120ms;
+    }
+
+    .upload-label:hover {
+      background: var(--color-surface);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .upload-hint {
+      font-size: 12px;
+      color: var(--color-tertiary);
+    }
+
+    .char-count {
+      font-size: 12px;
+      color: var(--color-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    /* 预览面板 */
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-header {
+      padding: var(--space-sm) var(--space-lg);
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-title {
+      font-size: 13px;
+      font-weight: 500;
       color: var(--color-secondary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      font-weight: 500;
     }
 
-    .style-selector {
-      padding: var(--space-sm) var(--space-md);
-      border: 1px solid var(--color-border);
-      border-radius: 2px;
-      font-size: 13px;
-      font-family: var(--font-sans);
-      background: var(--color-surface);
-      cursor: pointer;
-      min-width: 160px;
-    }
-
-    .style-selector:focus {
-      outline: 2px solid var(--color-accent);
-      outline-offset: -2px;
+    .preview-actions {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
     }
 
     .star-btn {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border: 1px solid var(--color-border);
       background: var(--color-surface);
       color: var(--color-secondary);
       cursor: pointer;
-      border-radius: 2px;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -134,21 +317,21 @@
     }
 
     .star-btn svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       stroke-width: 2;
     }
 
     .copy-btn {
-      padding: var(--space-sm) var(--space-lg);
+      padding: 6px 16px;
       background: var(--color-primary);
       color: var(--color-surface);
       border: none;
-      border-radius: 2px;
+      border-radius: 6px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
-      transition: opacity 120ms;
+      transition: all 120ms;
       letter-spacing: 0.02em;
     }
 
@@ -156,87 +339,19 @@
       opacity: 0.8;
     }
 
+    .copy-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
     .copy-btn.success {
       background: #00C853;
-    }
-
-    /* 编辑器面板 */
-    .editor-panel {
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid var(--color-border);
-    }
-
-    .editor-toolbar {
-      padding: var(--space-md) var(--space-lg);
-      border-bottom: 1px solid var(--color-border);
-      display: flex;
-      gap: var(--space-md);
-      align-items: center;
-      background: var(--color-surface);
-    }
-
-    .upload-label {
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-      cursor: pointer;
-      padding: var(--space-sm) var(--space-md);
-      border: 1px solid var(--color-border);
-      border-radius: 2px;
-      background: var(--color-surface);
-      color: var(--color-secondary);
-      font-size: 13px;
-      transition: all 120ms;
-    }
-
-    .upload-label:hover {
-      background: var(--color-bg);
-      color: var(--color-primary);
-    }
-
-    .editor-toolbar span {
-      font-size: 12px;
-      color: var(--color-tertiary);
-    }
-
-    .markdown-input-container {
-      flex: 1;
-      overflow: hidden;
-      padding: var(--space-md);
-      background: var(--color-surface);
-    }
-
-    .markdown-input {
-      width: 100%;
-      height: 100%;
-      padding: var(--space-lg);
-      border: 1px solid var(--color-border);
-      border-radius: 2px;
-      font-family: var(--font-mono);
-      font-size: 14px;
-      line-height: 1.6;
-      resize: none;
-      background: var(--color-surface);
-      color: var(--color-primary);
-    }
-
-    .markdown-input:focus {
-      outline: 2px solid var(--color-accent);
-      outline-offset: -2px;
-    }
-
-    /* 预览面板 */
-    .preview-panel {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
     }
 
     .preview-content {
       flex: 1;
       overflow-y: auto;
-      background: var(--color-bg);
+      background: var(--color-surface);
     }
 
     .preview-container {
@@ -282,7 +397,7 @@
       padding: var(--space-md) var(--space-lg);
       background: var(--color-primary);
       color: var(--color-surface);
-      border-radius: 2px;
+      border-radius: 6px;
       font-size: 13px;
       z-index: 1000;
       animation: slideUp 200ms ease-out;
@@ -330,57 +445,35 @@
     @media (max-width: 768px) {
       #app {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto auto auto 1fr;
         height: 100vh;
       }
 
-      .top-nav {
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--space-md);
-        padding: var(--space-md);
+      .header {
+        padding: var(--space-xs) var(--space-sm);
       }
 
       .logo {
-        font-size: 16px;
-        text-align: center;
+        font-size: 14px;
       }
 
-      .style-control {
-        flex-direction: column;
-        gap: var(--space-sm);
+      .styles-section {
+        padding: var(--space-xs) 0;
       }
 
-      .style-control label {
-        display: none;
+      .styles-container {
+        padding: 0 var(--space-sm);
       }
 
-      .style-selector {
-        width: 100%;
-      }
-
-      .star-btn {
-        display: none;
-      }
-
-      .copy-btn {
-        width: 100%;
-        padding: var(--space-md);
+      .style-card {
+        font-size: 11px;
+        padding: 4px 8px;
       }
 
       .editor-panel {
         border-right: none;
         border-bottom: 1px solid var(--color-border);
-        max-height: 40vh;
-      }
-
-      .editor-toolbar {
-        flex-wrap: wrap;
-        padding: var(--space-sm) var(--space-md);
-      }
-
-      .editor-toolbar span {
-        display: none;
+        max-height: 30vh;
       }
 
       .markdown-input-container {
@@ -390,6 +483,27 @@
       .markdown-input {
         font-size: 13px;
         padding: var(--space-md);
+      }
+
+      .editor-footer {
+        flex-direction: column;
+        gap: var(--space-sm);
+        align-items: stretch;
+        padding: var(--space-sm) var(--space-md);
+      }
+
+      .upload-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .upload-label {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .preview-header {
+        padding: var(--space-xs) var(--space-sm);
       }
 
       .preview-panel {
@@ -413,8 +527,12 @@
         max-width: 100%;
       }
 
-      .top-nav {
-        padding: var(--space-md) var(--space-lg);
+      .header {
+        padding: var(--space-sm) var(--space-lg);
+      }
+
+      .styles-section {
+        padding: var(--space-sm) 0;
       }
 
       .preview-container {
@@ -425,89 +543,66 @@
 </head>
 <body>
   <div id="app">
-    <!-- 顶部工具栏 -->
-    <div class="top-nav">
-      <div class="logo">📝 公众号 Markdown 编辑器</div>
-
-      <div class="style-control">
-        <label>样式</label>
-        <select v-model="currentStyle" class="style-selector">
-          <!-- 星标样式 -->
-          <optgroup label="⭐ 我的收藏" v-if="starredStyles.length > 0">
-            <option v-for="styleKey in starredStyles" :key="'star-' + styleKey" :value="styleKey">
-              {{ getStyleName(styleKey) }}
-            </option>
-          </optgroup>
-
-          <!-- 经典公众号系列 -->
-          <optgroup label="📘 经典公众号">
-            <option value="wechat-default">默认</option>
-            <option value="wechat-tech">技术</option>
-            <option value="wechat-elegant">优雅</option>
-            <option value="wechat-deepread">深度阅读</option>
-          </optgroup>
-
-          <!-- 传统媒体系列 -->
-          <optgroup label="🗞️ 传统媒体">
-            <option value="wechat-magazine">杂志风格</option>
-            <option value="wechat-nyt">纽约时报</option>
-            <option value="wechat-ft">金融时报</option>
-            <option value="wechat-jonyive">Jony Ive</option>
-          </optgroup>
-
-          <!-- 现代数字系列 -->
-          <optgroup label="🚀 现代数字">
-            <option value="wechat-wired">Wired 连线</option>
-            <option value="wechat-medium">Medium 长文</option>
-            <option value="wechat-apple">Apple 极简</option>
-            <option value="wechat-anthropic">Anthropic Claude</option>
-            <option value="wechat-aicoder">AI Coder 特调</option>
-          </optgroup>
-        </select>
-
-        <!-- 星标按钮 -->
-        <button
-          class="star-btn"
-          :class="{ active: isStyleStarred(currentStyle) }"
-          @click="toggleStarStyle(currentStyle)"
-          title="收藏此样式"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" :fill="isStyleStarred(currentStyle) ? 'currentColor' : 'none'">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-          </svg>
-        </button>
-
-        <button
-          v-if="renderedContent"
-          class="copy-btn"
-          :class="{ success: copySuccess }"
-          @click="copyToClipboard"
-        >
-          {{ copySuccess ? '已复制' : '复制到公众号' }}
-        </button>
+    <!-- 顶部栏 -->
+    <header class="header">
+      <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20">
+          <rect width="32" height="32" rx="6" fill="#0066FF"/>
+          <path d="M6 10 L6 22 L9 22 L9 15 L13 20 L17 15 L17 22 L20 22 L20 10 L16 10 L13 14 L10 10 Z" fill="white"/>
+          <rect x="6" y="24" width="20" height="2" rx="1" fill="white" opacity="0.7"/>
+        </svg>
+        <span>公众号 Markdown 编辑器</span>
       </div>
-    </div>
+    </header>
 
-    <!-- 编辑器面板 -->
-    <div class="editor-panel">
-      <div class="editor-toolbar">
-        <label for="file-upload" class="upload-label">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-          <span>上传 MD 文件</span>
-          <input type="file" id="file-upload" accept=".md,.markdown" @change="handleFileUpload" style="display: none;">
-        </label>
-        <span>或直接粘贴 Markdown 内容</span>
+    <!-- 样式选择区 - 横向滚动 -->
+    <section class="styles-section">
+      <div class="styles-container">
+        <div class="styles-label">选择样式</div>
+        <div class="styles-scroll-wrapper">
+          <div class="styles-list">
+            <!-- 收藏的样式 -->
+            <template v-if="starredStyles.length > 0">
+              <div
+                v-for="styleKey in starredStyles"
+                :key="'star-' + styleKey"
+                class="style-card starred"
+                :class="{ active: currentStyle === styleKey }"
+                @click="currentStyle = styleKey"
+              >
+                {{ getStyleName(styleKey) }}
+              </div>
+              <div style="width: 1px; height: 20px; background: var(--color-light-border); margin: 0 4px;"></div>
+            </template>
+
+            <!-- 所有样式，添加推荐标识 -->
+            <div
+              v-for="(style, key) in STYLES"
+              :key="key"
+              class="style-card"
+              :class="{
+                active: currentStyle === key,
+                starred: isStyleStarred(key),
+                recommended: isRecommended(key)
+              }"
+              @click="currentStyle = key"
+            >
+              {{ style.name }}
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <div class="markdown-input-container">
-        <textarea
-          v-model="markdownInput"
-          class="markdown-input"
-          placeholder="# 在这里粘贴或输入 Markdown 内容
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 编辑器面板 -->
+      <div class="editor-panel">
+        <div class="markdown-input-container">
+          <textarea
+            v-model="markdownInput"
+            class="markdown-input"
+            placeholder="# 在这里粘贴或输入 Markdown 内容
 
 ## 功能特点
 
@@ -516,22 +611,66 @@
 - **一键复制**：直接粘贴到公众号
 
 试试修改内容，右侧会立即更新！"
-          spellcheck="false"
-        ></textarea>
-      </div>
-    </div>
-
-    <!-- 预览面板 -->
-    <div class="preview-panel">
-      <div class="preview-content">
-        <div v-if="!renderedContent" class="empty-state">
-          <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <h3>开始编辑</h3>
-          <p>左侧输入 Markdown，右侧实时预览</p>
+            spellcheck="false"
+          ></textarea>
         </div>
-        <div v-else class="preview-container" v-html="renderedContent"></div>
+
+        <!-- 编辑器底部工具栏 -->
+        <div class="editor-footer">
+          <div class="upload-section">
+            <label for="file-upload" class="upload-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>上传 MD 文件</span>
+              <input type="file" id="file-upload" accept=".md,.markdown" @change="handleFileUpload" style="display: none;">
+            </label>
+            <span class="upload-hint">支持 .md / .markdown 文件</span>
+          </div>
+          <div class="char-count">
+            {{ markdownInput.length }} 字符
+          </div>
+        </div>
+      </div>
+
+      <!-- 预览面板 -->
+      <div class="preview-panel">
+        <div class="preview-header">
+          <div class="preview-title">预览</div>
+          <div class="preview-actions">
+            <button
+              class="star-btn"
+              :class="{ active: isStyleStarred(currentStyle) }"
+              @click="toggleStarStyle(currentStyle)"
+              title="收藏此样式"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" :fill="isStyleStarred(currentStyle) ? 'currentColor' : 'none'">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+            </button>
+            <button
+              class="copy-btn"
+              :class="{ success: copySuccess }"
+              :disabled="!renderedContent"
+              @click="copyToClipboard"
+            >
+              {{ copySuccess ? '✓ 已复制' : '复制到公众号' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="preview-content">
+          <div v-if="!renderedContent" class="empty-state">
+            <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3>开始编辑</h3>
+            <p>左侧输入 Markdown，右侧实时预览</p>
+          </div>
+          <div v-else class="preview-container" v-html="renderedContent"></div>
+        </div>
       </div>
     </div>
 

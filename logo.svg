@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- 渐变色 -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0052CC;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- 阴影 -->
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- 背景圆角矩形 -->
+  <rect width="128" height="128" rx="24" fill="url(#bgGradient)"/>
+
+  <!-- 主体设计 - Markdown符号 M 和下箭头组合 -->
+  <g fill="white">
+    <!-- M 符号 - 更优雅的设计 -->
+    <path d="M20 40 L20 88 L32 88 L32 60 L48 80 L64 60 L64 88 L76 88 L76 40 L64 40 L48 62 L32 40 Z"
+          stroke="white" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+
+    <!-- 向下箭头 - 代表导出/转换 -->
+    <path d="M92 40 L92 70 L82 70 L96 84 L110 70 L100 70 L100 40 Z"
+          stroke="white" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+
+    <!-- 底部线条 - 代表文档 -->
+    <rect x="20" y="96" width="88" height="3" rx="1.5" opacity="0.8"/>
+    <rect x="20" y="104" width="60" height="3" rx="1.5" opacity="0.5"/>
+  </g>
+</svg>

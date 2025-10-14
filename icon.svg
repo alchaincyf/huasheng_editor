@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 背景圆角矩形 -->
+  <rect width="256" height="256" rx="48" fill="#0066FF"/>
+
+  <!-- M 符号（代表 Markdown） -->
+  <g fill="white">
+    <!-- 左侧 M -->
+    <path d="M40 80 L40 176 L60 176 L60 120 L88 160 L116 120 L116 176 L136 176 L136 80 L108 80 L88 112 L68 80 Z"/>
+
+    <!-- 右侧向下箭头（代表导出/转换） -->
+    <path d="M176 80 L176 140 L156 140 L196 180 L236 140 L216 140 L216 80 Z"/>
+  </g>
+
+  <!-- 细节：编辑线条 -->
+  <rect x="40" y="196" width="176" height="4" rx="2" fill="white" opacity="0.6"/>
+  <rect x="40" y="210" width="120" height="4" rx="2" fill="white" opacity="0.4"/>
+</svg>

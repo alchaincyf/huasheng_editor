@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- 背景 -->
+  <rect width="32" height="32" rx="6" fill="#0066FF"/>
+
+  <!-- M 符号 - 简化版本 -->
+  <path d="M6 10 L6 22 L9 22 L9 15 L13 20 L17 15 L17 22 L20 22 L20 10 L16 10 L13 14 L10 10 Z" fill="white"/>
+
+  <!-- 下划线 -->
+  <rect x="6" y="24" width="20" height="2" rx="1" fill="white" opacity="0.7"/>
+</svg>
