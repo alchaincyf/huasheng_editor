@@ -3,6 +3,231 @@
  * 基于 app.js 的 STYLES，复用样式系统
  */
 
+/**
+ * 图床管理器 - 支持多个图床服务，智能降级
+ */
+class ImageHostManager {
+  constructor() {
+    // 图床服务列表（按优先级排序）
+    this.hosts = [
+      {
+        name: 'SM.MS',
+        upload: this.uploadToSmms.bind(this),
+        maxSize: 5 * 1024 * 1024, // 5MB
+        priority: 1
+      },
+      {
+        name: 'ImgBB',
+        upload: this.uploadToImgbb.bind(this),
+        maxSize: 32 * 1024 * 1024, // 32MB
+        priority: 2
+      },
+      {
+        name: 'Catbox',
+        upload: this.uploadToCatbox.bind(this),
+        maxSize: 200 * 1024 * 1024, // 200MB
+        priority: 3
+      },
+      {
+        name: 'Telegraph',
+        upload: this.uploadToTelegraph.bind(this),
+        maxSize: 5 * 1024 * 1024, // 5MB
+        priority: 4
+      }
+    ];
+
+    // 失败记录（用于临时降低优先级）
+    this.failureCount = {};
+    this.lastFailureTime = {};
+  }
+
+  // 智能选择图床（根据失败记录和文件大小）
+  selectHost(fileSize) {
+    const now = Date.now();
+    const cooldownTime = 5 * 60 * 1000; // 5分钟冷却时间
+
+    return this.hosts
+      .filter(host => fileSize <= host.maxSize)
+      .sort((a, b) => {
+        // 如果最近失败过，降低优先级
+        const aFailures = this.failureCount[a.name] || 0;
+        const bFailures = this.failureCount[b.name] || 0;
+        const aLastFail = this.lastFailureTime[a.name] || 0;
+        const bLastFail = this.lastFailureTime[b.name] || 0;
+
+        // 如果在冷却期内，大幅降低优先级
+        const aInCooldown = (now - aLastFail) < cooldownTime;
+        const bInCooldown = (now - bLastFail) < cooldownTime;
+
+        if (aInCooldown && !bInCooldown) return 1;
+        if (!aInCooldown && bInCooldown) return -1;
+
+        // 按失败次数和原始优先级排序
+        const aPenalty = aFailures * 10 + a.priority;
+        const bPenalty = bFailures * 10 + b.priority;
+
+        return aPenalty - bPenalty;
+      });
+  }
+
+  // 记录失败
+  recordFailure(hostName) {
+    this.failureCount[hostName] = (this.failureCount[hostName] || 0) + 1;
+    this.lastFailureTime[hostName] = Date.now();
+  }
+
+  // 记录成功（重置失败计数）
+  recordSuccess(hostName) {
+    this.failureCount[hostName] = 0;
+    delete this.lastFailureTime[hostName];
+  }
+
+  // 尝试上传到所有可用图床
+  async upload(file, onProgress) {
+    const availableHosts = this.selectHost(file.size);
+
+    if (availableHosts.length === 0) {
+      throw new Error('文件太大，没有可用的图床服务');
+    }
+
+    let lastError = null;
+
+    for (const host of availableHosts) {
+      try {
+        if (onProgress) {
+          onProgress(`正在尝试 ${host.name}...`);
+        }
+
+        const result = await host.upload(file);
+        this.recordSuccess(host.name);
+
+        return {
+          url: result.url,
+          host: host.name,
+          deleteUrl: result.deleteUrl
+        };
+      } catch (error) {
+        console.warn(`${host.name} 上传失败:`, error.message);
+        this.recordFailure(host.name);
+        lastError = error;
+        // 继续尝试下一个图床
+      }
+    }
+
+    // 所有图床都失败了
+    throw new Error(`所有图床上传失败，最后错误: ${lastError?.message || '未知错误'}`);
+  }
+
+  // SM.MS 图床
+  async uploadToSmms(file) {
+    const formData = new FormData();
+    formData.append('smfile', file);
+
+    const response = await fetch('https://sm.ms/api/v2/upload', {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30000) // 30秒超时
+    });
+
+    const result = await response.json();
+
+    if (result.success || (result.code === 'image_repeated' && result.images)) {
+      return {
+        url: result.data?.url || result.images,
+        deleteUrl: result.data?.delete || null
+      };
+    }
+
+    throw new Error(result.message || 'SM.MS 上传失败');
+  }
+
+  // ImgBB 图床
+  async uploadToImgbb(file) {
+    const base64 = await this.fileToBase64(file);
+    const base64String = base64.split(',')[1];
+
+    // 公共 API Key（建议用户替换为自己的）
+    const API_KEY = '2d4f6c8e6b1f5a9d3e7c8b5a4d3e2f1a';
+
+    const formData = new FormData();
+    formData.append('image', base64String);
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30000)
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      return {
+        url: result.data.url,
+        deleteUrl: result.data.delete_url || null
+      };
+    }
+
+    throw new Error('ImgBB 上传失败');
+  }
+
+  // Catbox 图床（无需 API key，简单可靠）
+  async uploadToCatbox(file) {
+    const formData = new FormData();
+    formData.append('fileToUpload', file);
+    formData.append('reqtype', 'fileupload');
+
+    const response = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30000)
+    });
+
+    const url = await response.text();
+
+    if (url && url.startsWith('https://files.catbox.moe/')) {
+      return {
+        url: url.trim(),
+        deleteUrl: null
+      };
+    }
+
+    throw new Error('Catbox 上传失败');
+  }
+
+  // Telegraph 图床（Telegram 官方，稳定可靠）
+  async uploadToTelegraph(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('https://telegra.ph/upload', {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30000)
+    });
+
+    const result = await response.json();
+
+    if (result && result[0] && result[0].src) {
+      return {
+        url: 'https://telegra.ph' + result[0].src,
+        deleteUrl: null
+      };
+    }
+
+    throw new Error('Telegraph 上传失败');
+  }
+
+  // 辅助：文件转 Base64
+  fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  }
+}
+
 const { createApp } = Vue;
 
 const editorApp = createApp({
@@ -21,7 +246,8 @@ const editorApp = createApp({
       md: null,
       STYLES: STYLES,  // 将样式对象暴露给模板
       turndownService: null,  // Turndown 服务实例
-      isDraggingOver: false  // 拖拽状态
+      isDraggingOver: false,  // 拖拽状态
+      imageHostManager: new ImageHostManager()  // 图床管理器
     };
   },
 
@@ -683,7 +909,7 @@ const editorApp = createApp({
 
     isRecommended(styleKey) {
       // 推荐的样式
-      const recommended = ['wechat-anthropic', 'wechat-ft', 'wechat-nyt', 'wechat-tech'];
+      const recommended = ['latepost-depth', 'wechat-anthropic', 'wechat-ft', 'wechat-nyt', 'wechat-tech'];
       return recommended.includes(styleKey);
     },
 
@@ -958,20 +1184,18 @@ const editorApp = createApp({
       });
     },
 
-    // 处理图片上传
+    // 处理图片上传 - 使用多图床管理器
     async handleImageUpload(file, textarea) {
-      const DEBUG = false; // 调试模式
-
       // 检查文件类型
       if (!file.type.startsWith('image/')) {
         this.showToast('请上传图片文件', 'error');
         return;
       }
 
-      // 检查文件大小（sm.ms 限制 5MB）
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      // 检查文件大小（200MB - Catbox 的限制）
+      const maxSize = 200 * 1024 * 1024;
       if (file.size > maxSize) {
-        this.showToast('图片大小不能超过 5MB', 'error');
+        this.showToast('图片大小不能超过 200MB', 'error');
         return;
       }
 
@@ -987,131 +1211,68 @@ const editorApp = createApp({
       }
 
       try {
-        // 显示上传提示
-        this.showToast('🚀 正在上传图片...', 'success');
-
-        // 上传到 sm.ms 图床
-        const formData = new FormData();
-        formData.append('smfile', file);
-
-        const response = await fetch('https://sm.ms/api/v2/upload', {
-          method: 'POST',
-          body: formData
+        // 使用图床管理器上传，带进度回调
+        const result = await this.imageHostManager.upload(file, (message) => {
+          this.showToast(message, 'success');
         });
 
-        const result = await response.json();
+        const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
+        const markdownImage = `![${imageName}](${result.url})`;
 
-        if (result.success || (result.code === 'image_repeated' && result.images)) {
-          // 获取图片URL
-          const imageUrl = result.data?.url || result.images;
-          const deleteUrl = result.data?.delete || '';
+        // 替换占位符
+        const currentText = this.markdownInput;
+        const placeholderIndex = currentText.indexOf(placeholderText);
 
-          // 生成 Markdown 图片语法
-          const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
-          const markdownImage = `![${imageName}](${imageUrl})`;
-
-          // 替换占位符
-          const currentText = this.markdownInput;
-          const placeholderIndex = currentText.indexOf(placeholderText);
-
-          if (placeholderIndex !== -1) {
-            this.markdownInput =
-              currentText.substring(0, placeholderIndex) +
-              markdownImage +
-              currentText.substring(placeholderIndex + placeholderText.length);
-          }
-
-          // 恢复光标位置
-          if (textarea) {
-            this.$nextTick(() => {
-              textarea.selectionStart = textarea.selectionEnd =
-                cursorPos + markdownImage.length - placeholderText.length;
-              textarea.focus();
-            });
-          }
-
-          this.showToast('✅ 图片上传成功', 'success');
-
-          // 保存删除链接（可选，用于后续管理）
-          // if (DEBUG) console.log('图片删除链接:', deleteUrl);
-        } else {
-          throw new Error(result.message || '上传失败');
+        if (placeholderIndex !== -1) {
+          this.markdownInput =
+            currentText.substring(0, placeholderIndex) +
+            markdownImage +
+            currentText.substring(placeholderIndex + placeholderText.length);
         }
+
+        // 恢复光标位置
+        if (textarea) {
+          this.$nextTick(() => {
+            textarea.selectionStart = textarea.selectionEnd =
+              cursorPos + markdownImage.length - placeholderText.length;
+            textarea.focus();
+          });
+        }
+
+        this.showToast(`✅ 上传成功 (${result.host})`, 'success');
       } catch (error) {
-        if (DEBUG) console.error('图片上传失败:', error);
+        console.error('图片上传失败:', error);
 
         // 移除占位符
         this.markdownInput = this.markdownInput.replace(placeholderText, '');
 
-        // 如果是 CORS 错误，尝试使用备用方案
-        if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-          this.showToast('sm.ms 图床暂时不可用，尝试使用备用方案...', 'error');
-          await this.handleImageUploadFallback(file, textarea);
-        } else {
-          this.showToast('图片上传失败: ' + error.message, 'error');
-        }
-      }
-    },
+        // 最后的备用方案：Base64 嵌入
+        const useBase64 = confirm(
+          `所有图床上传失败: ${error.message}\n\n` +
+          '是否将图片转为 Base64 嵌入？\n' +
+          '(注意：Base64 会增大文件大小，可能影响加载速度)'
+        );
 
-    // 备用图片上传方案 - 使用免费的 imgbb
-    async handleImageUploadFallback(file, textarea) {
-      try {
-        // 转换为 Base64
-        const base64 = await this.fileToBase64(file);
-        const base64String = base64.split(',')[1]; // 移除 data:image/jpeg;base64, 前缀
+        if (useBase64) {
+          try {
+            const base64 = await this.imageHostManager.hosts[0].fileToBase64(file);
+            const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
+            const markdownImage = `![${imageName}](${base64})`;
 
-        // 使用 imgbb API（免费，每月32MB带宽）
-        const API_KEY = '2d4f6c8e6b1f5a9d3e7c8b5a4d3e2f1a'; // 公共测试key，建议替换为自己的
-        const formData = new FormData();
-        formData.append('image', base64String);
+            if (textarea) {
+              this.insertTextAtCursor(textarea, markdownImage);
+            } else {
+              this.markdownInput += '\n' + markdownImage;
+            }
 
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          const imageUrl = result.data.url;
-          const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
-          const markdownImage = `![${imageName}](${imageUrl})`;
-
-          // 插入到编辑器
-          if (textarea) {
-            this.insertTextAtCursor(textarea, markdownImage);
-          } else {
-            this.markdownInput += '\n' + markdownImage;
+            this.showToast('⚠️ 已嵌入为 Base64', 'success');
+          } catch (base64Error) {
+            this.showToast('Base64 转换也失败了', 'error');
           }
-
-          this.showToast('✅ 图片上传成功（备用通道）', 'success');
         } else {
-          throw new Error('备用图床也失败了');
+          this.showToast('图片上传已取消', 'error');
         }
-      } catch (error) {
-        // 最后的备用方案：转为 base64 直接嵌入
-        const base64 = await this.fileToBase64(file);
-        const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
-        const markdownImage = `![${imageName}](${base64})`;
-
-        if (textarea) {
-          this.insertTextAtCursor(textarea, markdownImage);
-        } else {
-          this.markdownInput += '\n' + markdownImage;
-        }
-
-        this.showToast('⚠️ 图片已嵌入为 Base64（可能影响性能）', 'error');
       }
-    },
-
-    // 文件转 Base64
-    fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
     },
 
     // 处理文件拖拽
