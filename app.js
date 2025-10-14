@@ -20,7 +20,8 @@ const editorApp = createApp({
       },
       md: null,
       STYLES: STYLES,  // 将样式对象暴露给模板
-      turndownService: null  // Turndown 服务实例
+      turndownService: null,  // Turndown 服务实例
+      isDraggingOver: false  // 拖拽状态
     };
   },
 
@@ -113,7 +114,10 @@ const editorApp = createApp({
 
       // 渲染
       let html = this.md.render(processedContent);
+
+      // 应用样式
       html = this.applyInlineStyles(html);
+
       this.renderedContent = html;
     },
 
@@ -131,20 +135,26 @@ const editorApp = createApp({
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
 
+      // 先处理图片网格布局（在应用样式之前）
+      this.groupConsecutiveImages(doc);
+
       Object.keys(style).forEach(selector => {
         if (selector === 'pre' || selector === 'code' || selector === 'pre code') {
           return;
         }
 
+        // 跳过已经在网格容器中的图片
         const elements = doc.querySelectorAll(selector);
         elements.forEach(el => {
+          // 如果是图片且在网格容器内，跳过样式应用
+          if (el.tagName === 'IMG' && el.closest('.image-grid')) {
+            return;
+          }
+
           const currentStyle = el.getAttribute('style') || '';
           el.setAttribute('style', currentStyle + '; ' + style[selector]);
         });
       });
-
-      // 处理图片网格布局
-      this.groupConsecutiveImages(doc);
 
       const container = doc.createElement('div');
       container.setAttribute('style', style.container);
@@ -159,18 +169,48 @@ const editorApp = createApp({
 
       let imagesToProcess = [];
 
-      // 找出所有连续的图片元素
+      // 找出所有图片元素，处理两种情况：
+      // 1. 多个图片在同一个<p>标签内（连续图片）
+      // 2. 每个图片在单独的<p>标签内（分隔的图片）
       children.forEach((child, index) => {
-        if (child.tagName === 'P' && child.children.length === 1 && child.children[0].tagName === 'IMG') {
-          // 段落中只包含图片
-          imagesToProcess.push({ element: child, img: child.children[0], index });
+        if (child.tagName === 'P') {
+          const images = child.querySelectorAll('img');
+          if (images.length > 0) {
+            // 如果一个P标签内有多个图片，它们肯定是连续的
+            if (images.length > 1) {
+              // 多个图片在同一个P标签内，作为一组
+              const group = Array.from(images).map(img => ({
+                element: child,
+                img: img,
+                index: index,
+                inSameParagraph: true,
+                paragraphImageCount: images.length
+              }));
+              imagesToProcess.push(...group);
+            } else if (images.length === 1) {
+              // 单个图片在P标签内
+              imagesToProcess.push({
+                element: child,
+                img: images[0],
+                index: index,
+                inSameParagraph: false,
+                paragraphImageCount: 1
+              });
+            }
+          }
         } else if (child.tagName === 'IMG') {
-          // 直接是图片元素
-          imagesToProcess.push({ element: child, img: child, index });
+          // 直接是图片元素（少见情况）
+          imagesToProcess.push({
+            element: child,
+            img: child,
+            index: index,
+            inSameParagraph: false,
+            paragraphImageCount: 1
+          });
         }
       });
 
-      // 按索引分组连续的图片
+      // 分组逻辑
       let groups = [];
       let currentGroup = [];
 
@@ -178,10 +218,21 @@ const editorApp = createApp({
         if (i === 0) {
           currentGroup.push(item);
         } else {
-          // 检查是否连续（索引差值为1或之间只有空白节点）
-          const prevIndex = imagesToProcess[i - 1].index;
-          const currIndex = item.index;
-          const isContinuous = currIndex - prevIndex <= 2; // 允许之间有一个空白节点
+          const prevItem = imagesToProcess[i - 1];
+
+          // 判断是否连续的条件：
+          // 1. 在同一个P标签内的图片肯定是连续的
+          // 2. 不同P标签的图片，要看索引是否相邻（差值为1表示相邻）
+          let isContinuous = false;
+
+          if (item.index === prevItem.index) {
+            // 同一个P标签内的图片
+            isContinuous = true;
+          } else if (item.index - prevItem.index === 1) {
+            // 相邻的P标签，表示连续（没有空行）
+            isContinuous = true;
+          }
+          // 如果索引差大于1，说明中间有其他元素或空行，不连续
 
           if (isContinuous) {
             currentGroup.push(item);
@@ -200,59 +251,84 @@ const editorApp = createApp({
 
       // 对每组图片进行处理
       groups.forEach(group => {
-        // 只有2张及以上的图片才需要网格布局
+        // 只有2张及以上的图片才需要特殊布局
         if (group.length < 2) return;
 
         const imageCount = group.length;
         const firstElement = group[0].element;
 
-        // 创建网格容器
+        // 创建容器
         const gridContainer = doc.createElement('div');
         gridContainer.setAttribute('class', 'image-grid');
+        gridContainer.setAttribute('data-image-count', imageCount);
 
-        // 根据图片数量决定列数
-        let columns;
+        // 根据图片数量设置网格样式
+        let gridStyle = '';
+        let columns = 2; // 默认2列
+
         if (imageCount === 2) {
+          gridStyle = `
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 20px auto;
+            max-width: 100%;
+            align-items: start;
+          `;
           columns = 2;
         } else if (imageCount === 3) {
+          gridStyle = `
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 20px auto;
+            max-width: 100%;
+            align-items: start;
+          `;
           columns = 3;
         } else if (imageCount === 4) {
+          gridStyle = `
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 20px auto;
+            max-width: 100%;
+            align-items: start;
+          `;
           columns = 2;
         } else {
+          // 5张及以上，使用3列
+          gridStyle = `
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 20px auto;
+            max-width: 100%;
+            align-items: start;
+          `;
           columns = 3;
         }
 
-        // 设置网格容器样式
-        gridContainer.setAttribute('style', `
-          display: grid;
-          grid-template-columns: repeat(${columns}, 1fr);
-          gap: 8px;
-          margin: 20px auto;
-          max-width: 100%;
-        `.trim());
+        gridContainer.setAttribute('style', gridStyle);
+        gridContainer.setAttribute('data-columns', columns);
 
-        // 将图片添加到网格容器中
-        group.forEach(item => {
+        // 将图片添加到容器中
+        group.forEach((item) => {
           const imgWrapper = doc.createElement('div');
+
           imgWrapper.setAttribute('style', `
             width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f5f5f5;
-            border-radius: 4px;
+            height: auto;
             overflow: hidden;
-            min-height: 120px;
-            max-height: 360px;
-          `.trim());
+          `);
 
           const img = item.img.cloneNode(true);
-          // 修改图片样式以适应网格
+          // 修改图片样式以适应容器，添加圆角
           img.setAttribute('style', `
             width: 100%;
-            height: 100%;
-            object-fit: contain;
-            border-radius: 4px;
+            height: auto;
+            display: block;
+            border-radius: 8px;
           `.trim());
 
           imgWrapper.appendChild(img);
@@ -262,9 +338,15 @@ const editorApp = createApp({
         // 替换原来的图片元素
         firstElement.parentNode.insertBefore(gridContainer, firstElement);
 
-        // 删除原来的图片元素
+        // 删除原来的图片元素（需要去重，避免重复删除同一个元素）
+        const elementsToRemove = new Set();
         group.forEach(item => {
-          item.element.parentNode.removeChild(item.element);
+          elementsToRemove.add(item.element);
+        });
+        elementsToRemove.forEach(element => {
+          if (element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
         });
       });
     },
@@ -274,116 +356,116 @@ const editorApp = createApp({
       const imageGrids = doc.querySelectorAll('.image-grid');
 
       imageGrids.forEach(grid => {
-        // 获取网格的列数（从 grid-template-columns 样式中提取）
-        const gridStyle = grid.getAttribute('style') || '';
-        const columnsMatch = gridStyle.match(/grid-template-columns:\s*repeat\((\d+),/);
-        const columns = columnsMatch ? parseInt(columnsMatch[1]) : 3;
+        // 从data属性获取列数（我们在创建时设置的）
+        const columns = parseInt(grid.getAttribute('data-columns')) || 2;
+        this.convertToTable(doc, grid, columns);
+      });
+    },
 
+    convertToTable(doc, grid, columns) {
+      // 获取所有图片包装器
+      const imgWrappers = Array.from(grid.children);
 
-        // 获取所有图片包装器
-        const imgWrappers = Array.from(grid.children);
+      // 创建 table 元素
+      const table = doc.createElement('table');
+      table.setAttribute('style', `
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 20px auto !important;
+        table-layout: fixed !important;
+        border: none !important;
+        background: transparent !important;
+      `.trim());
 
-        // 创建 table 元素
-        const table = doc.createElement('table');
-        table.setAttribute('style', `
-          width: 100% !important;
-          border-collapse: collapse !important;
-          margin: 20px auto !important;
-          table-layout: fixed !important;
-          border: none !important;
-          background: transparent !important;
-        `.trim());
+      // 计算需要多少行
+      const rows = Math.ceil(imgWrappers.length / columns);
 
-        // 计算需要多少行
-        const rows = Math.ceil(imgWrappers.length / columns);
+      // 创建表格行
+      for (let i = 0; i < rows; i++) {
+        const tr = doc.createElement('tr');
 
-        // 创建表格行
-        for (let i = 0; i < rows; i++) {
-          const tr = doc.createElement('tr');
+        // 创建表格单元格
+        for (let j = 0; j < columns; j++) {
+          const index = i * columns + j;
+          const td = doc.createElement('td');
 
-          // 创建表格单元格
-          for (let j = 0; j < columns; j++) {
-            const index = i * columns + j;
-            const td = doc.createElement('td');
+          td.setAttribute('style', `
+            padding: 4px !important;
+            vertical-align: top !important;
+            width: ${100 / columns}% !important;
+            border: none !important;
+            background: transparent !important;
+          `.trim());
 
-            td.setAttribute('style', `
-              padding: 4px !important;
-              vertical-align: top !important;
-              width: ${100 / columns}% !important;
-              border: none !important;
-              background: transparent !important;
-            `.trim());
+          // 如果有对应的图片，添加到单元格
+          if (index < imgWrappers.length) {
+            const imgWrapper = imgWrappers[index];
+            const img = imgWrapper.querySelector('img');
 
-            // 如果有对应的图片，添加到单元格
-            if (index < imgWrappers.length) {
-              const imgWrapper = imgWrappers[index];
-              const img = imgWrapper.querySelector('img');
-
-              if (img) {
-                // 根据列数设置不同的图片最大高度 - 确保单行最高360px
-                let imgMaxHeight;
-                let containerHeight;
-                if (columns === 2) {
-                  imgMaxHeight = '340px';  // 2列布局单张最高340px（留出padding空间）
-                  containerHeight = '360px';  // 容器高度360px
-                } else if (columns === 3) {
-                  imgMaxHeight = '340px';  // 3列布局单张最高340px
-                  containerHeight = '360px';  // 容器高度360px
-                } else {
-                  imgMaxHeight = '340px';  // 默认高度340px
-                  containerHeight = '360px';  // 容器高度360px
-                }
-
-                // 创建一个新的包装 div - 添加背景和居中样式（使用table-cell方式，更兼容）
-                const wrapper = doc.createElement('div');
-                wrapper.setAttribute('style', `
-                  width: 100% !important;
-                  height: ${containerHeight} !important;
-                  text-align: center !important;
-                  background-color: #f5f5f5 !important;
-                  border-radius: 4px !important;
-                  padding: 10px !important;
-                  box-sizing: border-box !important;
-                  overflow: hidden !important;
-                  display: table !important;
-                `.trim());
-
-                // 创建内部居中容器
-                const innerWrapper = doc.createElement('div');
-                innerWrapper.setAttribute('style', `
-                  display: table-cell !important;
-                  vertical-align: middle !important;
-                  text-align: center !important;
-                `.trim());
-
-                // 克隆图片并直接设置最大高度
-                const newImg = img.cloneNode(true);
-                newImg.setAttribute('style', `
-                  max-width: calc(100% - 20px) !important;
-                  max-height: ${imgMaxHeight} !important;
-                  width: auto !important;
-                  height: auto !important;
-                  display: inline-block !important;
-                  margin: 0 auto !important;
-                  border-radius: 4px !important;
-                  object-fit: contain !important;
-                `.trim());
-
-                innerWrapper.appendChild(newImg);
-                wrapper.appendChild(innerWrapper);
-                td.appendChild(wrapper);
+            if (img) {
+              // 根据列数设置不同的图片最大高度 - 确保单行最高360px
+              let imgMaxHeight;
+              let containerHeight;
+              if (columns === 2) {
+                imgMaxHeight = '340px';  // 2列布局单张最高340px（留出padding空间）
+                containerHeight = '360px';  // 容器高度360px
+              } else if (columns === 3) {
+                imgMaxHeight = '340px';  // 3列布局单张最高340px
+                containerHeight = '360px';  // 容器高度360px
+              } else {
+                imgMaxHeight = '340px';  // 默认高度340px
+                containerHeight = '360px';  // 容器高度360px
               }
-            }
 
-            tr.appendChild(td);
+              // 创建一个新的包装 div - 添加背景和居中样式（使用table-cell方式，更兼容）
+              const wrapper = doc.createElement('div');
+              wrapper.setAttribute('style', `
+                width: 100% !important;
+                height: ${containerHeight} !important;
+                text-align: center !important;
+                background-color: #f5f5f5 !important;
+                border-radius: 4px !important;
+                padding: 10px !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                display: table !important;
+              `.trim());
+
+              // 创建内部居中容器
+              const innerWrapper = doc.createElement('div');
+              innerWrapper.setAttribute('style', `
+                display: table-cell !important;
+                vertical-align: middle !important;
+                text-align: center !important;
+              `.trim());
+
+              // 克隆图片并直接设置最大高度
+              const newImg = img.cloneNode(true);
+              newImg.setAttribute('style', `
+                max-width: calc(100% - 20px) !important;
+                max-height: ${imgMaxHeight} !important;
+                width: auto !important;
+                height: auto !important;
+                display: inline-block !important;
+                margin: 0 auto !important;
+                border-radius: 4px !important;
+                object-fit: contain !important;
+              `.trim());
+
+              innerWrapper.appendChild(newImg);
+              wrapper.appendChild(innerWrapper);
+              td.appendChild(wrapper);
+            }
           }
 
-          table.appendChild(tr);
+          tr.appendChild(td);
         }
 
-        // 替换网格为 table
-        grid.parentNode.replaceChild(table, grid);
-      });
+        table.appendChild(tr);
+      }
+
+      // 替换网格为 table
+      grid.parentNode.replaceChild(table, grid);
     },
 
     async copyToClipboard() {
@@ -714,19 +796,83 @@ const editorApp = createApp({
     },
 
     // 处理粘贴事件
-    handleSmartPaste(event) {
+    async handleSmartPaste(event) {
       const clipboardData = event.clipboardData || event.originalEvent?.clipboardData;
 
       if (!clipboardData) {
         return; // 不支持的浏览器，使用默认行为
       }
 
+      // 调试模式（需要时可以打开）
+      const DEBUG = false;
+      if (DEBUG) {
+        console.log('剪贴板数据类型:', Array.from(clipboardData.types || []));
+      }
+
+      // 检查是否有文件（某些应用复制图片会作为文件）
+      if (clipboardData.files && clipboardData.files.length > 0) {
+        if (DEBUG) console.log('检测到文件:', clipboardData.files[0]);
+        const file = clipboardData.files[0];
+        if (file && file.type && file.type.startsWith('image/')) {
+          event.preventDefault();
+          await this.handleImageUpload(file, event.target);
+          return;
+        }
+      }
+
+      // 检查 items（浏览器复制的图片通常在这里）
+      const items = clipboardData.items;
+      if (items) {
+        for (let item of items) {
+          if (DEBUG) console.log('Item 类型:', item.type, 'Kind:', item.kind);
+
+          // 检查是否是图片
+          if (item.kind === 'file' && item.type && item.type.indexOf('image') !== -1) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (file) {
+              await this.handleImageUpload(file, event.target);
+              return; // 处理完图片就返回
+            }
+          }
+        }
+      }
+
       // 获取剪贴板中的各种格式数据
       const htmlData = clipboardData.getData('text/html');
       const textData = clipboardData.getData('text/plain');
 
+      // 检查是否是类似 [Image #2] 这样的占位符文本
+      if (textData && /^\[Image\s*#?\d*\]$/i.test(textData.trim())) {
+        if (DEBUG) console.warn('检测到图片占位符文本，但无法获取实际图片数据');
+        this.showToast('⚠️ 请尝试：截图工具 / 浏览器复制 / 拖拽文件', 'error');
+        event.preventDefault();
+        return; // 不插入占位符文本
+      }
+
+      // 首先检查纯文本是否已经是 Markdown（优先级最高）
+      if (textData && this.isMarkdown(textData)) {
+        // 已经是 Markdown，直接使用纯文本，忽略 HTML
+        if (DEBUG) console.log('检测到 Markdown 格式，使用纯文本');
+        return; // 使用默认粘贴行为
+      }
       // 如果有 HTML 数据，说明可能来自富文本编辑器（如飞书、Notion、Word）
-      if (htmlData && htmlData.trim() !== '' && this.turndownService) {
+      else if (htmlData && htmlData.trim() !== '' && this.turndownService) {
+        // 检查是否是从代码编辑器复制的（通常会包含 <pre> 或 <code> 标签）
+        if (htmlData.includes('<pre') || htmlData.includes('<code')) {
+          // 可能是从代码编辑器复制的，使用纯文本
+          if (DEBUG) console.log('检测到代码编辑器格式，使用纯文本');
+          return; // 使用默认粘贴行为
+        }
+
+        // 检查 HTML 中是否包含本地文件路径的图片（如 file:/// 协议）
+        if (htmlData.includes('file:///') || htmlData.includes('src="file:')) {
+          if (DEBUG) console.warn('检测到本地文件路径的图片，无法直接上传');
+          this.showToast('⚠️ 本地图片请直接拖拽文件到编辑器', 'error');
+          event.preventDefault();
+          return;
+        }
+
         event.preventDefault(); // 阻止默认粘贴
 
         try {
@@ -757,15 +903,10 @@ const editorApp = createApp({
           // 显示提示
           this.showToast('✨ 已智能转换为 Markdown 格式', 'success');
         } catch (error) {
-          console.error('HTML 转 Markdown 失败:', error);
+          if (DEBUG) console.error('HTML 转 Markdown 失败:', error);
           // 转换失败，使用纯文本
           this.insertTextAtCursor(event.target, textData);
         }
-      }
-      // 检测是否已经是 Markdown 格式
-      else if (textData && this.isMarkdown(textData)) {
-        // 已经是 Markdown，直接粘贴
-        return; // 使用默认行为
       }
       // 普通文本，使用默认粘贴行为
       else {
@@ -789,14 +930,17 @@ const editorApp = createApp({
         /^>\s+/m,                // 引用
         /`[^`]+`/,               // 内联代码
         /```[\s\S]*?```/,        // 代码块
-        /^\|.*\|$/m              // 表格
+        /^\|.*\|$/m,             // 表格
+        /<!--.*?-->/,            // HTML 注释（我们的图片注释）
+        /^---+$/m                // 分隔线
       ];
 
       // 计算匹配的特征数量
       const matchCount = patterns.filter(pattern => pattern.test(text)).length;
 
       // 如果有 2 个或以上的 Markdown 特征，认为是 Markdown
-      return matchCount >= 2;
+      // 或者如果包含我们的图片注释，也认为是 Markdown
+      return matchCount >= 2 || text.includes('<!-- img:');
     },
 
     // 在光标位置插入文本
@@ -812,6 +956,203 @@ const editorApp = createApp({
         textarea.selectionStart = textarea.selectionEnd = start + text.length;
         textarea.focus();
       });
+    },
+
+    // 处理图片上传
+    async handleImageUpload(file, textarea) {
+      const DEBUG = false; // 调试模式
+
+      // 检查文件类型
+      if (!file.type.startsWith('image/')) {
+        this.showToast('请上传图片文件', 'error');
+        return;
+      }
+
+      // 检查文件大小（sm.ms 限制 5MB）
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        this.showToast('图片大小不能超过 5MB', 'error');
+        return;
+      }
+
+      // 生成临时占位符
+      const placeholderText = `![上传中...](uploading)`;
+      const cursorPos = textarea ? textarea.selectionStart : this.markdownInput.length;
+
+      // 插入占位符
+      if (textarea) {
+        this.insertTextAtCursor(textarea, placeholderText);
+      } else {
+        this.markdownInput += '\n' + placeholderText;
+      }
+
+      try {
+        // 显示上传提示
+        this.showToast('🚀 正在上传图片...', 'success');
+
+        // 上传到 sm.ms 图床
+        const formData = new FormData();
+        formData.append('smfile', file);
+
+        const response = await fetch('https://sm.ms/api/v2/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success || (result.code === 'image_repeated' && result.images)) {
+          // 获取图片URL
+          const imageUrl = result.data?.url || result.images;
+          const deleteUrl = result.data?.delete || '';
+
+          // 生成 Markdown 图片语法
+          const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
+          const markdownImage = `![${imageName}](${imageUrl})`;
+
+          // 替换占位符
+          const currentText = this.markdownInput;
+          const placeholderIndex = currentText.indexOf(placeholderText);
+
+          if (placeholderIndex !== -1) {
+            this.markdownInput =
+              currentText.substring(0, placeholderIndex) +
+              markdownImage +
+              currentText.substring(placeholderIndex + placeholderText.length);
+          }
+
+          // 恢复光标位置
+          if (textarea) {
+            this.$nextTick(() => {
+              textarea.selectionStart = textarea.selectionEnd =
+                cursorPos + markdownImage.length - placeholderText.length;
+              textarea.focus();
+            });
+          }
+
+          this.showToast('✅ 图片上传成功', 'success');
+
+          // 保存删除链接（可选，用于后续管理）
+          // if (DEBUG) console.log('图片删除链接:', deleteUrl);
+        } else {
+          throw new Error(result.message || '上传失败');
+        }
+      } catch (error) {
+        if (DEBUG) console.error('图片上传失败:', error);
+
+        // 移除占位符
+        this.markdownInput = this.markdownInput.replace(placeholderText, '');
+
+        // 如果是 CORS 错误，尝试使用备用方案
+        if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+          this.showToast('sm.ms 图床暂时不可用，尝试使用备用方案...', 'error');
+          await this.handleImageUploadFallback(file, textarea);
+        } else {
+          this.showToast('图片上传失败: ' + error.message, 'error');
+        }
+      }
+    },
+
+    // 备用图片上传方案 - 使用免费的 imgbb
+    async handleImageUploadFallback(file, textarea) {
+      try {
+        // 转换为 Base64
+        const base64 = await this.fileToBase64(file);
+        const base64String = base64.split(',')[1]; // 移除 data:image/jpeg;base64, 前缀
+
+        // 使用 imgbb API（免费，每月32MB带宽）
+        const API_KEY = '2d4f6c8e6b1f5a9d3e7c8b5a4d3e2f1a'; // 公共测试key，建议替换为自己的
+        const formData = new FormData();
+        formData.append('image', base64String);
+
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          const imageUrl = result.data.url;
+          const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
+          const markdownImage = `![${imageName}](${imageUrl})`;
+
+          // 插入到编辑器
+          if (textarea) {
+            this.insertTextAtCursor(textarea, markdownImage);
+          } else {
+            this.markdownInput += '\n' + markdownImage;
+          }
+
+          this.showToast('✅ 图片上传成功（备用通道）', 'success');
+        } else {
+          throw new Error('备用图床也失败了');
+        }
+      } catch (error) {
+        // 最后的备用方案：转为 base64 直接嵌入
+        const base64 = await this.fileToBase64(file);
+        const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
+        const markdownImage = `![${imageName}](${base64})`;
+
+        if (textarea) {
+          this.insertTextAtCursor(textarea, markdownImage);
+        } else {
+          this.markdownInput += '\n' + markdownImage;
+        }
+
+        this.showToast('⚠️ 图片已嵌入为 Base64（可能影响性能）', 'error');
+      }
+    },
+
+    // 文件转 Base64
+    fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    },
+
+    // 处理文件拖拽
+    handleDrop(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      this.isDraggingOver = false;
+
+      const files = event.dataTransfer.files;
+      if (files.length > 0) {
+        const file = files[0];
+        if (file.type.startsWith('image/')) {
+          this.handleImageUpload(file, event.target);
+        } else {
+          this.showToast('只支持拖拽图片文件', 'error');
+        }
+      }
+    },
+
+    // 阻止默认拖拽行为
+    handleDragOver(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = 'copy';
+      this.isDraggingOver = true;
+    },
+
+    // 处理拖拽进入
+    handleDragEnter(event) {
+      event.preventDefault();
+      this.isDraggingOver = true;
+    },
+
+    // 处理拖拽离开
+    handleDragLeave(event) {
+      event.preventDefault();
+      // 只有当真正离开编辑器时才移除状态
+      if (event.target.classList.contains('markdown-input')) {
+        this.isDraggingOver = false;
+      }
     }
   }
 });
