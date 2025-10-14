@@ -17,6 +17,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/highlight.min.js"></script>
 
+  <!-- Turndown - HTML 转 Markdown 库 -->
+  <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js"></script>
+
   <!-- Vue.js -->
   <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
 
@@ -263,19 +266,8 @@
 
     .feishu-hint {
       font-size: 11px;
-      color: var(--color-tertiary);
-      line-height: 1.4;
-    }
-
-    .feishu-hint a {
       color: var(--color-accent);
-      text-decoration: none;
-      border-bottom: 1px dashed var(--color-accent);
-      transition: all 120ms;
-    }
-
-    .feishu-hint a:hover {
-      border-bottom-style: solid;
+      line-height: 1.4;
       opacity: 0.8;
     }
 
@@ -635,12 +627,14 @@
           <textarea
             v-model="markdownInput"
             class="markdown-input"
+            @paste="handleSmartPaste"
             placeholder="# 在这里粘贴或输入 Markdown 内容
 
 ## 功能特点
 
 - **实时预览**：所见即所得
 - **13 种样式**：随意切换
+- **智能粘贴**：支持从飞书、Notion、Word 直接粘贴
 - **一键复制**：直接粘贴到公众号
 
 试试修改内容，右侧会立即更新！"
@@ -663,13 +657,7 @@
             <div class="upload-hints">
               <span class="upload-hint">支持 .md / .markdown 文件</span>
               <span class="feishu-hint">
-                飞书用户推荐安装
-                <a href="https://chromewebstore.google.com/detail/cloud-document-converter/ehkomhhcinhikfddnmklbloahaakploh"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                  Cloud Document Converter
-                </a>
-                插件
+                💡 支持从飞书、Notion、Word 等直接粘贴，自动转换为 Markdown
               </span>
             </div>
           </div>

@@ -19,13 +19,17 @@ const editorApp = createApp({
         type: 'success'
       },
       md: null,
-      STYLES: STYLES  // 将样式对象暴露给模板
+      STYLES: STYLES,  // 将样式对象暴露给模板
+      turndownService: null  // Turndown 服务实例
     };
   },
 
   async mounted() {
     // 加载星标样式
     this.loadStarredStyles();
+
+    // 初始化 Turndown 服务（HTML 转 Markdown）
+    this.initTurndownService();
 
     // 初始化 markdown-it
     const md = window.markdownit({
@@ -634,6 +638,180 @@ const editorApp = createApp({
       setTimeout(() => {
         this.toast.show = false;
       }, 3000);
+    },
+
+    // 初始化 Turndown 服务
+    initTurndownService() {
+      if (typeof TurndownService === 'undefined') {
+        console.warn('Turndown 库未加载，智能粘贴功能将不可用');
+        return;
+      }
+
+      this.turndownService = new TurndownService({
+        headingStyle: 'atx',        // 使用 # 样式的标题
+        bulletListMarker: '-',       // 无序列表使用 -
+        codeBlockStyle: 'fenced',    // 代码块使用 ```
+        fence: '```',                // 代码块围栏
+        emDelimiter: '*',            // 斜体使用 *
+        strongDelimiter: '**',       // 加粗使用 **
+        linkStyle: 'inlined'         // 链接使用内联样式
+      });
+
+      // 配置表格支持
+      this.turndownService.keep(['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td']);
+
+      // 自定义规则：保留表格结构
+      this.turndownService.addRule('table', {
+        filter: 'table',
+        replacement: (_content, node) => {
+          // 简单的表格转换为 Markdown 表格
+          const rows = Array.from(node.querySelectorAll('tr'));
+          if (rows.length === 0) return '';
+
+          let markdown = '\n\n';
+          let headerProcessed = false;
+
+          rows.forEach((row, index) => {
+            const cells = Array.from(row.querySelectorAll('td, th'));
+            const cellContents = cells.map(cell => {
+              // 清理单元格内容
+              const text = cell.textContent.replace(/\n/g, ' ').trim();
+              return text;
+            });
+
+            if (cellContents.length > 0) {
+              markdown += '| ' + cellContents.join(' | ') + ' |\n';
+
+              // 第一行后添加分隔符
+              if (index === 0 || (!headerProcessed && row.querySelector('th'))) {
+                markdown += '| ' + cells.map(() => '---').join(' | ') + ' |\n';
+                headerProcessed = true;
+              }
+            }
+          });
+
+          return markdown + '\n';
+        }
+      });
+
+      // 自定义规则：优化图片处理
+      this.turndownService.addRule('image', {
+        filter: 'img',
+        replacement: (_content, node) => {
+          const alt = node.alt || '图片';
+          const src = node.src || '';
+          const title = node.title || '';
+
+          // 处理 base64 图片（截取前30个字符作为标识）
+          if (src.startsWith('data:image')) {
+            const type = src.match(/data:image\/(\w+);/)?.[1] || 'image';
+            return `![${alt}](data:image/${type};base64,...)${title ? ` "${title}"` : ''}\n`;
+          }
+
+          return `![${alt}](${src})${title ? ` "${title}"` : ''}\n`;
+        }
+      });
+    },
+
+    // 处理粘贴事件
+    handleSmartPaste(event) {
+      const clipboardData = event.clipboardData || event.originalEvent?.clipboardData;
+
+      if (!clipboardData) {
+        return; // 不支持的浏览器，使用默认行为
+      }
+
+      // 获取剪贴板中的各种格式数据
+      const htmlData = clipboardData.getData('text/html');
+      const textData = clipboardData.getData('text/plain');
+
+      // 如果有 HTML 数据，说明可能来自富文本编辑器（如飞书、Notion、Word）
+      if (htmlData && htmlData.trim() !== '' && this.turndownService) {
+        event.preventDefault(); // 阻止默认粘贴
+
+        try {
+          // 将 HTML 转换为 Markdown
+          let markdown = this.turndownService.turndown(htmlData);
+
+          // 清理多余的空行
+          markdown = markdown.replace(/\n{3,}/g, '\n\n');
+
+          // 获取当前光标位置
+          const textarea = event.target;
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const value = textarea.value;
+
+          // 插入转换后的 Markdown
+          const newValue = value.substring(0, start) + markdown + value.substring(end);
+
+          // 更新文本框内容
+          this.markdownInput = newValue;
+
+          // 恢复光标位置
+          this.$nextTick(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
+            textarea.focus();
+          });
+
+          // 显示提示
+          this.showToast('✨ 已智能转换为 Markdown 格式', 'success');
+        } catch (error) {
+          console.error('HTML 转 Markdown 失败:', error);
+          // 转换失败，使用纯文本
+          this.insertTextAtCursor(event.target, textData);
+        }
+      }
+      // 检测是否已经是 Markdown 格式
+      else if (textData && this.isMarkdown(textData)) {
+        // 已经是 Markdown，直接粘贴
+        return; // 使用默认行为
+      }
+      // 普通文本，使用默认粘贴行为
+      else {
+        return; // 使用默认行为
+      }
+    },
+
+    // 检测文本是否为 Markdown 格式
+    isMarkdown(text) {
+      if (!text) return false;
+
+      // Markdown 特征模式
+      const patterns = [
+        /^#{1,6}\s+/m,           // 标题
+        /\*\*[^*]+\*\*/,         // 加粗
+        /\*[^*\n]+\*/,           // 斜体
+        /\[[^\]]+\]\([^)]+\)/,   // 链接
+        /!\[[^\]]*\]\([^)]+\)/,  // 图片
+        /^[\*\-\+]\s+/m,         // 无序列表
+        /^\d+\.\s+/m,            // 有序列表
+        /^>\s+/m,                // 引用
+        /`[^`]+`/,               // 内联代码
+        /```[\s\S]*?```/,        // 代码块
+        /^\|.*\|$/m              // 表格
+      ];
+
+      // 计算匹配的特征数量
+      const matchCount = patterns.filter(pattern => pattern.test(text)).length;
+
+      // 如果有 2 个或以上的 Markdown 特征，认为是 Markdown
+      return matchCount >= 2;
+    },
+
+    // 在光标位置插入文本
+    insertTextAtCursor(textarea, text) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const value = textarea.value;
+
+      const newValue = value.substring(0, start) + text + value.substring(end);
+      this.markdownInput = newValue;
+
+      this.$nextTick(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+      });
     }
   }
 });
