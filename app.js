@@ -4,50 +4,358 @@
  */
 
 /**
+ * 图片存储管理器 - 使用 IndexedDB 持久化存储压缩后的图片
+ */
+class ImageStore {
+  constructor() {
+    this.dbName = 'WechatEditorImages';
+    this.storeName = 'images';
+    this.version = 1;
+    this.db = null;
+  }
+
+  // 初始化 IndexedDB
+  async init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, this.version);
+
+      request.onerror = () => {
+        console.error('IndexedDB 打开失败:', request.error);
+        reject(request.error);
+      };
+
+      request.onsuccess = () => {
+        this.db = request.result;
+        console.log('IndexedDB 初始化成功');
+        resolve();
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+
+        // 创建对象存储（如果不存在）
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          const objectStore = db.createObjectStore(this.storeName, { keyPath: 'id' });
+
+          // 创建索引
+          objectStore.createIndex('createdAt', 'createdAt', { unique: false });
+          objectStore.createIndex('name', 'name', { unique: false });
+
+          console.log('ImageStore 对象存储已创建');
+        }
+      };
+    });
+  }
+
+  // 保存图片
+  async saveImage(id, blob, metadata = {}) {
+    if (!this.db) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const objectStore = transaction.objectStore(this.storeName);
+
+      const imageData = {
+        id: id,
+        blob: blob,
+        name: metadata.name || 'image',
+        originalSize: metadata.originalSize || 0,
+        compressedSize: blob.size,
+        createdAt: Date.now(),
+        ...metadata
+      };
+
+      const request = objectStore.put(imageData);
+
+      request.onsuccess = () => {
+        console.log(`图片已保存: ${id}`);
+        resolve(id);
+      };
+
+      request.onerror = () => {
+        console.error('保存图片失败:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 获取图片（返回 Object URL）
+  async getImage(id) {
+    if (!this.db) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readonly');
+      const objectStore = transaction.objectStore(this.storeName);
+      const request = objectStore.get(id);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result && result.blob) {
+          const objectURL = URL.createObjectURL(result.blob);
+          resolve(objectURL);
+        } else {
+          console.warn(`图片不存在: ${id}`);
+          resolve(null);
+        }
+      };
+
+      request.onerror = () => {
+        console.error('读取图片失败:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 获取图片 Blob（用于复制时转 Base64）
+  async getImageBlob(id) {
+    if (!this.db) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readonly');
+      const objectStore = transaction.objectStore(this.storeName);
+      const request = objectStore.get(id);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result && result.blob) {
+          resolve(result.blob);
+        } else {
+          resolve(null);
+        }
+      };
+
+      request.onerror = () => {
+        console.error('读取图片 Blob 失败:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 删除图片
+  async deleteImage(id) {
+    if (!this.db) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const objectStore = transaction.objectStore(this.storeName);
+      const request = objectStore.delete(id);
+
+      request.onsuccess = () => {
+        console.log(`图片已删除: ${id}`);
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('删除图片失败:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 获取所有图片列表（用于管理）
+  async getAllImages() {
+    if (!this.db) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readonly');
+      const objectStore = transaction.objectStore(this.storeName);
+      const request = objectStore.getAll();
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+
+      request.onerror = () => {
+        console.error('获取图片列表失败:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 清空所有图片
+  async clearAll() {
+    if (!this.db) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const objectStore = transaction.objectStore(this.storeName);
+      const request = objectStore.clear();
+
+      request.onsuccess = () => {
+        console.log('所有图片已清空');
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('清空图片失败:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  // 计算总存储大小
+  async getTotalSize() {
+    const images = await this.getAllImages();
+    return images.reduce((total, img) => total + (img.compressedSize || 0), 0);
+  }
+}
+
+/**
+ * 图片压缩器 - 使用 Canvas API 压缩图片
+ */
+class ImageCompressor {
+  constructor(options = {}) {
+    this.maxWidth = options.maxWidth || 1920;
+    this.maxHeight = options.maxHeight || 1920;
+    this.quality = options.quality || 0.85;
+    this.mimeType = options.mimeType || 'image/jpeg';
+  }
+
+  // 压缩图片
+  async compress(file) {
+    return new Promise((resolve, reject) => {
+      // 如果是 GIF 或 SVG，不压缩（保持动画或矢量）
+      if (file.type === 'image/gif' || file.type === 'image/svg+xml') {
+        resolve(file);
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onerror = () => {
+        reject(new Error('文件读取失败'));
+      };
+
+      reader.onload = (e) => {
+        const img = new Image();
+
+        img.onerror = () => {
+          reject(new Error('图片加载失败'));
+        };
+
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            // 计算缩放比例
+            let scale = 1;
+            if (width > this.maxWidth) {
+              scale = this.maxWidth / width;
+            }
+            if (height > this.maxHeight) {
+              scale = Math.min(scale, this.maxHeight / height);
+            }
+
+            // 应用缩放
+            width = Math.floor(width * scale);
+            height = Math.floor(height * scale);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // 绘制图片
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff'; // 白色背景（针对透明 PNG）
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // 转为 Blob
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  // 如果压缩后反而更大，使用原文件
+                  if (blob.size < file.size) {
+                    resolve(blob);
+                  } else {
+                    console.log('压缩后体积更大，使用原文件');
+                    resolve(file);
+                  }
+                } else {
+                  reject(new Error('Canvas toBlob 失败'));
+                }
+              },
+              // PNG 保持 PNG，其他转 JPEG
+              file.type === 'image/png' ? 'image/png' : this.mimeType,
+              this.quality
+            );
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        img.src = e.target.result;
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 格式化文件大小
+  static formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+}
+
+/**
  * 图床管理器 - 支持多个图床服务，智能降级
  */
 class ImageHostManager {
   constructor() {
-    // 图床服务列表（按优先级排序）
+    // 图床服务列表（仅保留可靠且无CORS限制的服务）
     this.hosts = [
       {
         name: 'SM.MS',
         upload: this.uploadToSmms.bind(this),
         maxSize: 5 * 1024 * 1024, // 5MB
-        priority: 1
-      },
-      {
-        name: 'ImgBB',
-        upload: this.uploadToImgbb.bind(this),
-        maxSize: 32 * 1024 * 1024, // 32MB
-        priority: 2
-      },
-      {
-        name: 'Catbox',
-        upload: this.uploadToCatbox.bind(this),
-        maxSize: 200 * 1024 * 1024, // 200MB
-        priority: 3
-      },
-      {
-        name: 'Telegraph',
-        upload: this.uploadToTelegraph.bind(this),
-        maxSize: 5 * 1024 * 1024, // 5MB
-        priority: 4
+        priority: 1,
+        timeout: 10000 // 10秒超时
       }
     ];
 
     // 失败记录（用于临时降低优先级）
     this.failureCount = {};
     this.lastFailureTime = {};
+
+    // 启用/禁用状态（可以手动禁用某些服务）
+    this.disabledHosts = new Set();
   }
 
   // 智能选择图床（根据失败记录和文件大小）
   selectHost(fileSize) {
     const now = Date.now();
-    const cooldownTime = 5 * 60 * 1000; // 5分钟冷却时间
+    const cooldownTime = 3 * 60 * 1000; // 3分钟冷却时间（缩短以便更快重试）
 
     return this.hosts
-      .filter(host => fileSize <= host.maxSize)
+      .filter(host => {
+        // 过滤条件：1) 文件大小符合 2) 未被禁用 3) 不在冷却期或失败次数不太多
+        if (fileSize > host.maxSize) return false;
+        if (this.disabledHosts.has(host.name)) return false;
+
+        const failures = this.failureCount[host.name] || 0;
+        const lastFail = this.lastFailureTime[host.name] || 0;
+        const inCooldown = (now - lastFail) < cooldownTime;
+
+        // 如果失败次数超过3次且在冷却期内，跳过
+        if (failures >= 3 && inCooldown) return false;
+
+        return true;
+      })
       .sort((a, b) => {
         // 如果最近失败过，降低优先级
         const aFailures = this.failureCount[a.name] || 0;
@@ -63,8 +371,8 @@ class ImageHostManager {
         if (!aInCooldown && bInCooldown) return -1;
 
         // 按失败次数和原始优先级排序
-        const aPenalty = aFailures * 10 + a.priority;
-        const bPenalty = bFailures * 10 + b.priority;
+        const aPenalty = aFailures * 5 + a.priority;
+        const bPenalty = bFailures * 5 + b.priority;
 
         return aPenalty - bPenalty;
       });
@@ -87,19 +395,31 @@ class ImageHostManager {
     const availableHosts = this.selectHost(file.size);
 
     if (availableHosts.length === 0) {
-      throw new Error('文件太大，没有可用的图床服务');
+      throw new Error('没有可用的图床服务（文件可能太大或所有服务都在冷却期）');
     }
 
     let lastError = null;
+    let attemptCount = 0;
 
     for (const host of availableHosts) {
+      attemptCount++;
       try {
         if (onProgress) {
-          onProgress(`正在尝试 ${host.name}...`);
+          onProgress(`🔄 尝试 ${host.name} (${attemptCount}/${availableHosts.length})`);
         }
 
-        const result = await host.upload(file);
+        // 使用Promise.race实现超时控制
+        const uploadPromise = host.upload(file);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('上传超时')), host.timeout);
+        });
+
+        const result = await Promise.race([uploadPromise, timeoutPromise]);
         this.recordSuccess(host.name);
+
+        if (onProgress) {
+          onProgress(`✅ ${host.name} 上传成功`);
+        }
 
         return {
           url: result.url,
@@ -107,27 +427,35 @@ class ImageHostManager {
           deleteUrl: result.deleteUrl
         };
       } catch (error) {
-        console.warn(`${host.name} 上传失败:`, error.message);
+        const errorMsg = error.message || error.toString();
+        console.warn(`${host.name} 上传失败:`, errorMsg);
         this.recordFailure(host.name);
         lastError = error;
-        // 继续尝试下一个图床
+
+        // 如果还有其他图床可以尝试，继续
+        if (attemptCount < availableHosts.length && onProgress) {
+          onProgress(`⚠️ ${host.name} 失败，尝试下一个...`);
+        }
       }
     }
 
     // 所有图床都失败了
-    throw new Error(`所有图床上传失败，最后错误: ${lastError?.message || '未知错误'}`);
+    throw new Error(`所有图床均上传失败 (尝试了${attemptCount}个)\n最后错误: ${lastError?.message || '未知错误'}`);
   }
 
-  // SM.MS 图床
+  // SM.MS 图床（唯一支持浏览器端直接上传的稳定图床）
   async uploadToSmms(file) {
     const formData = new FormData();
     formData.append('smfile', file);
 
     const response = await fetch('https://sm.ms/api/v2/upload', {
       method: 'POST',
-      body: formData,
-      signal: AbortSignal.timeout(30000) // 30秒超时
+      body: formData
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
 
     const result = await response.json();
 
@@ -138,83 +466,7 @@ class ImageHostManager {
       };
     }
 
-    throw new Error(result.message || 'SM.MS 上传失败');
-  }
-
-  // ImgBB 图床
-  async uploadToImgbb(file) {
-    const base64 = await this.fileToBase64(file);
-    const base64String = base64.split(',')[1];
-
-    // 公共 API Key（建议用户替换为自己的）
-    const API_KEY = '2d4f6c8e6b1f5a9d3e7c8b5a4d3e2f1a';
-
-    const formData = new FormData();
-    formData.append('image', base64String);
-
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
-      method: 'POST',
-      body: formData,
-      signal: AbortSignal.timeout(30000)
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      return {
-        url: result.data.url,
-        deleteUrl: result.data.delete_url || null
-      };
-    }
-
-    throw new Error('ImgBB 上传失败');
-  }
-
-  // Catbox 图床（无需 API key，简单可靠）
-  async uploadToCatbox(file) {
-    const formData = new FormData();
-    formData.append('fileToUpload', file);
-    formData.append('reqtype', 'fileupload');
-
-    const response = await fetch('https://catbox.moe/user/api.php', {
-      method: 'POST',
-      body: formData,
-      signal: AbortSignal.timeout(30000)
-    });
-
-    const url = await response.text();
-
-    if (url && url.startsWith('https://files.catbox.moe/')) {
-      return {
-        url: url.trim(),
-        deleteUrl: null
-      };
-    }
-
-    throw new Error('Catbox 上传失败');
-  }
-
-  // Telegraph 图床（Telegram 官方，稳定可靠）
-  async uploadToTelegraph(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch('https://telegra.ph/upload', {
-      method: 'POST',
-      body: formData,
-      signal: AbortSignal.timeout(30000)
-    });
-
-    const result = await response.json();
-
-    if (result && result[0] && result[0].src) {
-      return {
-        url: 'https://telegra.ph' + result[0].src,
-        deleteUrl: null
-      };
-    }
-
-    throw new Error('Telegraph 上传失败');
+    throw new Error(result.message || 'SM.MS响应失败');
   }
 
   // 辅助：文件转 Base64
@@ -247,13 +499,33 @@ const editorApp = createApp({
       STYLES: STYLES,  // 将样式对象暴露给模板
       turndownService: null,  // Turndown 服务实例
       isDraggingOver: false,  // 拖拽状态
-      imageHostManager: new ImageHostManager()  // 图床管理器
+      imageHostManager: new ImageHostManager(),  // 图床管理器（已废弃，保留兼容）
+      imageStore: null,  // 图片存储管理器（IndexedDB）
+      imageCompressor: null,  // 图片压缩器
+      imageIdToObjectURL: {}  // 图片 ID 到 Object URL 的映射（用于预览时替换）
     };
   },
 
   async mounted() {
     // 加载星标样式
     this.loadStarredStyles();
+
+    // 初始化图片存储管理器
+    this.imageStore = new ImageStore();
+    try {
+      await this.imageStore.init();
+      console.log('图片存储系统已就绪');
+    } catch (error) {
+      console.error('图片存储系统初始化失败:', error);
+      this.showToast('图片存储系统初始化失败', 'error');
+    }
+
+    // 初始化图片压缩器（最大宽度 1920px，质量 85%）
+    this.imageCompressor = new ImageCompressor({
+      maxWidth: 1920,
+      maxHeight: 1920,
+      quality: 0.85
+    });
 
     // 初始化 Turndown 服务（HTML 转 Markdown）
     this.initTurndownService();
@@ -329,7 +601,7 @@ const editorApp = createApp({
       event.target.value = '';
     },
 
-    renderMarkdown() {
+    async renderMarkdown() {
       if (!this.markdownInput.trim()) {
         this.renderedContent = '';
         return;
@@ -340,6 +612,9 @@ const editorApp = createApp({
 
       // 渲染
       let html = this.md.render(processedContent);
+
+      // 处理 img:// 协议（从 IndexedDB 加载图片）
+      html = await this.processImageProtocol(html);
 
       // 应用样式
       html = this.applyInlineStyles(html);
@@ -354,6 +629,63 @@ const editorApp = createApp({
       content = content.replace(/^(\s*(?:\d+\.|-|\*)\s+[^:\n]+)\n:\s*(.+?)$/gm, '$1: $2');
       content = content.replace(/^(\s*(?:\d+\.|-|\*)\s+.+?)\n\n\s+(.+?)$/gm, '$1 $2');
       return content;
+    },
+
+    // 处理 img:// 协议（从 IndexedDB 加载图片）
+    async processImageProtocol(html) {
+      if (!this.imageStore) {
+        return html;
+      }
+
+      // 使用 DOMParser 解析 HTML
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // 查找所有 img 标签
+      const images = doc.querySelectorAll('img');
+
+      // 处理每个图片
+      for (const img of images) {
+        const src = img.getAttribute('src');
+
+        // 检查是否是 img:// 协议
+        if (src && src.startsWith('img://')) {
+          // 提取图片 ID
+          const imageId = src.replace('img://', '');
+
+          try {
+            // 从 IndexedDB 获取图片
+            let objectURL = this.imageIdToObjectURL[imageId];
+
+            if (!objectURL) {
+              // 如果还没有创建 Object URL，现在创建
+              objectURL = await this.imageStore.getImage(imageId);
+
+              if (objectURL) {
+                // 缓存 Object URL
+                this.imageIdToObjectURL[imageId] = objectURL;
+              } else {
+                console.warn(`图片不存在: ${imageId}`);
+                // 图片不存在，显示占位符
+                img.setAttribute('src', 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3E图片丢失%3C/text%3E%3C/svg%3E');
+                continue;
+              }
+            }
+
+            // 替换 src 为 Object URL
+            img.setAttribute('src', objectURL);
+
+            // 添加 data-image-id 属性（用于复制时识别）
+            img.setAttribute('data-image-id', imageId);
+          } catch (error) {
+            console.error(`加载图片失败 (${imageId}):`, error);
+            // 显示错误占位符
+            img.setAttribute('src', 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23fee" width="200" height="200"/%3E%3Ctext fill="%23c00" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3E加载失败%3C/text%3E%3C/svg%3E');
+          }
+        }
+      }
+
+      return doc.body.innerHTML;
     },
 
     applyInlineStyles(html) {
@@ -859,7 +1191,32 @@ const editorApp = createApp({
         return src;
       }
 
-      // 尝试转换为Base64
+      // 优先处理：检查是否有 data-image-id（来自 IndexedDB）
+      const imageId = imgElement.getAttribute('data-image-id');
+      if (imageId && this.imageStore) {
+        try {
+          // 从 IndexedDB 获取图片 Blob
+          const blob = await this.imageStore.getImageBlob(imageId);
+
+          if (blob) {
+            // 将 Blob 转为 Base64
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = (error) => reject(new Error('FileReader failed: ' + error));
+              reader.readAsDataURL(blob);
+            });
+          } else {
+            console.warn(`图片 Blob 不存在: ${imageId}`);
+            // 继续尝试用 fetch 方式（兜底）
+          }
+        } catch (error) {
+          console.error(`从 IndexedDB 读取图片失败 (${imageId}):`, error);
+          // 继续尝试用 fetch 方式（兜底）
+        }
+      }
+
+      // 后备方案：尝试通过 URL 获取图片
       try {
         const response = await fetch(src, {
           mode: 'cors',
@@ -1184,7 +1541,7 @@ const editorApp = createApp({
       });
     },
 
-    // 处理图片上传 - 使用多图床管理器
+    // 处理图片上传 - 压缩并存储到 IndexedDB
     async handleImageUpload(file, textarea) {
       // 检查文件类型
       if (!file.type.startsWith('image/')) {
@@ -1192,86 +1549,68 @@ const editorApp = createApp({
         return;
       }
 
-      // 检查文件大小（200MB - Catbox 的限制）
-      const maxSize = 200 * 1024 * 1024;
+      // 检查文件大小（10MB限制）
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        this.showToast('图片大小不能超过 200MB', 'error');
+        this.showToast('图片大小不能超过 10MB', 'error');
         return;
       }
 
-      // 生成临时占位符
-      const placeholderText = `![上传中...](uploading)`;
-      const cursorPos = textarea ? textarea.selectionStart : this.markdownInput.length;
-
-      // 插入占位符
-      if (textarea) {
-        this.insertTextAtCursor(textarea, placeholderText);
-      } else {
-        this.markdownInput += '\n' + placeholderText;
-      }
+      const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
+      const originalSize = file.size;
 
       try {
-        // 使用图床管理器上传，带进度回调
-        const result = await this.imageHostManager.upload(file, (message) => {
-          this.showToast(message, 'success');
+        // 第一步：压缩图片
+        this.showToast('🔄 正在压缩图片...', 'success');
+
+        const compressedBlob = await this.imageCompressor.compress(file);
+        const compressedSize = compressedBlob.size;
+
+        // 计算压缩率
+        const compressionRatio = ((1 - compressedSize / originalSize) * 100).toFixed(0);
+        console.log(`图片压缩完成: ${ImageCompressor.formatSize(originalSize)} → ${ImageCompressor.formatSize(compressedSize)} (压缩 ${compressionRatio}%)`);
+
+        // 第二步：生成唯一 ID
+        const imageId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // 第三步：存储到 IndexedDB
+        await this.imageStore.saveImage(imageId, compressedBlob, {
+          name: imageName,
+          originalName: file.name,
+          originalSize: originalSize,
+          compressedSize: compressedSize,
+          compressionRatio: compressionRatio,
+          mimeType: compressedBlob.type || file.type
         });
 
-        const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
-        const markdownImage = `![${imageName}](${result.url})`;
+        // 第四步：插入 img:// 协议的短链接到编辑器
+        const markdownImage = `![${imageName}](img://${imageId})`;
 
-        // 替换占位符
-        const currentText = this.markdownInput;
-        const placeholderIndex = currentText.indexOf(placeholderText);
-
-        if (placeholderIndex !== -1) {
-          this.markdownInput =
-            currentText.substring(0, placeholderIndex) +
-            markdownImage +
-            currentText.substring(placeholderIndex + placeholderText.length);
-        }
-
-        // 恢复光标位置
         if (textarea) {
+          const currentPos = textarea.selectionStart;
+          const before = this.markdownInput.substring(0, currentPos);
+          const after = this.markdownInput.substring(currentPos);
+
+          this.markdownInput = before + markdownImage + after;
+
           this.$nextTick(() => {
-            textarea.selectionStart = textarea.selectionEnd =
-              cursorPos + markdownImage.length - placeholderText.length;
+            const newPos = currentPos + markdownImage.length;
+            textarea.selectionStart = textarea.selectionEnd = newPos;
             textarea.focus();
           });
-        }
-
-        this.showToast(`✅ 上传成功 (${result.host})`, 'success');
-      } catch (error) {
-        console.error('图片上传失败:', error);
-
-        // 移除占位符
-        this.markdownInput = this.markdownInput.replace(placeholderText, '');
-
-        // 最后的备用方案：Base64 嵌入
-        const useBase64 = confirm(
-          `所有图床上传失败: ${error.message}\n\n` +
-          '是否将图片转为 Base64 嵌入？\n' +
-          '(注意：Base64 会增大文件大小，可能影响加载速度)'
-        );
-
-        if (useBase64) {
-          try {
-            const base64 = await this.imageHostManager.hosts[0].fileToBase64(file);
-            const imageName = file.name.replace(/\.[^/.]+$/, '') || '图片';
-            const markdownImage = `![${imageName}](${base64})`;
-
-            if (textarea) {
-              this.insertTextAtCursor(textarea, markdownImage);
-            } else {
-              this.markdownInput += '\n' + markdownImage;
-            }
-
-            this.showToast('⚠️ 已嵌入为 Base64', 'success');
-          } catch (base64Error) {
-            this.showToast('Base64 转换也失败了', 'error');
-          }
         } else {
-          this.showToast('图片上传已取消', 'error');
+          this.markdownInput += '\n' + markdownImage;
         }
+
+        // 第五步：显示成功提示
+        if (compressionRatio > 10) {
+          this.showToast(`✅ 已保存 (${ImageCompressor.formatSize(originalSize)} → ${ImageCompressor.formatSize(compressedSize)})`, 'success');
+        } else {
+          this.showToast(`✅ 已保存 (${ImageCompressor.formatSize(compressedSize)})`, 'success');
+        }
+      } catch (error) {
+        console.error('图片处理失败:', error);
+        this.showToast('❌ 图片处理失败: ' + error.message, 'error');
       }
     },
 
