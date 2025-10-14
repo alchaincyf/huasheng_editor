@@ -1,9 +1,10 @@
-# macOS
 .DS_Store
-
-# 编辑器
-.vscode/
-.idea/
-
-# 日志
+*.bak*
+node_modules/
+dist/
 *.log
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

@@ -1,189 +1,169 @@
-# 📝 公众号 Markdown 编辑器
+# 公众号 Markdown 编辑器
 
-一个极简的 Markdown 在线编辑器，专为微信公众号排版设计。
+<div align="center">
+  <img src="logo.svg" width="120" height="120" alt="公众号 Markdown 编辑器">
+
+  一个专为微信公众号设计的 Markdown 编辑器
+
+  [![在线体验](https://img.shields.io/badge/在线体验-editor.huasheng.ai-0066FF?style=for-the-badge)](https://editor.huasheng.ai/)
+  [![GitHub](https://img.shields.io/badge/GitHub-源代码-000?style=for-the-badge&logo=github)](https://github.com/alchaincyf/huasheng_editor)
+  [![知识星球](https://img.shields.io/badge/知识星球-AI编程-ff6b6b?style=for-the-badge)](https://wx.zsxq.com/group/48888144124288)
+</div>
+
+## 🌟 在线体验
+
+👉 **[https://editor.huasheng.ai/](https://editor.huasheng.ai/)**
 
 ## ✨ 功能特点
 
-- **实时预览**：左侧输入 Markdown，右侧实时渲染
-- **13 种样式**：从经典到前卫，任意选择
-  - 📘 经典公众号系列（默认/技术/优雅/深度阅读）
-  - 🗞️ 传统媒体系列（杂志/纽约时报/金融时报/Jony Ive）
-  - 🚀 现代数字系列（Wired/Medium/Apple/Anthropic/AI Coder）
-- **星标收藏**：收藏常用样式，下次快速选择
-- **一键复制**：图片自动转 Base64，直接粘贴到公众号
-- **代码高亮**：macOS 风格代码块
-- **复制模式**：支持"仅正文"和"完整内容"两种模式
-- **极简设计**：Dieter Rams + Josef Müller-Brockmann 风格
+### 🎨 13 种精美样式
+- **经典公众号系列**：默认、技术、优雅、深度阅读
+- **传统媒体系列**：杂志风格、纽约时报、金融时报、Jony Ive
+- **现代数字系列**：Wired 连线、Medium 长文、Apple 极简、Anthropic Claude、AI Coder 特调
 
-## 🚀 快速开始
+### 📸 智能图片排版
+- **单张图片**：最大高度 600px，居中展示
+- **多图网格**：2-3 列自动排版，类似朋友圈
+- **自动转换**：图片自动转为 Base64，完美兼容公众号
 
-### 1. 启动服务器
+### 🚀 强大功能
+- **实时预览**：左侧编辑，右侧即时查看效果
+- **一键复制**：直接粘贴到公众号编辑器，格式完美保留
+- **样式收藏**：收藏常用样式，快速切换
+- **文件上传**：支持 .md / .markdown 文件
+- **代码高亮**：优雅的代码块展示，支持多种语言
+- **响应式设计**：完美适配桌面、平板、手机
 
+## 📖 使用指南
+
+### 快速开始
+1. 访问 [在线编辑器](https://editor.huasheng.ai/)
+2. 在左侧输入或粘贴 Markdown 内容
+3. 选择喜欢的样式主题
+4. 点击「复制到公众号」
+5. 粘贴到微信公众号编辑器
+
+### 本地运行
 ```bash
+# 克隆仓库
+git clone https://github.com/alchaincyf/huasheng_editor.git
+
+# 进入目录
+cd huasheng_editor
+
+# 启动本地服务器（Python）
+python3 -m http.server 8080
+
+# 或使用提供的脚本
 ./start.sh
+
+# 访问 http://localhost:8080
 ```
-
-然后在浏览器访问：**http://localhost:8080/**
-
-### 2. 使用编辑器
-
-#### 方式一：粘贴 Markdown（推荐）
-1. 将 Markdown 内容粘贴到左侧输入框
-2. 右侧立即显示渲染效果
-3. 选择合适的样式
-4. 点击"复制到公众号"按钮
-5. 打开微信公众号编辑器，直接粘贴（Cmd+V）
-
-#### 方式二：上传 MD 文件
-1. 点击"上传 MD 文件"按钮
-2. 选择本地 `.md` 文件
-3. 右侧立即显示渲染效果
-4. 其余步骤同方式一
-
-### 3. 选择样式
-
-- 点击顶部"样式"下拉框，选择合适的样式
-- 点击 ⭐ 星标按钮，收藏常用样式
-- 收藏的样式会显示在下拉框顶部"我的收藏"分组
-
-### 4. 复制模式
-
-- **🎯 仅正文**：跳过文章开头的元信息区块（如类型、核心观点等）
-- **📋 完整内容**：复制所有内容，包括元信息
-
-## 📖 样式说明
-
-### 📘 经典公众号系列
-- **默认**：简洁专业，适合大多数场景
-- **技术**：适合技术文章、教程，黄色高亮强调
-- **优雅**：宋体字，适合散文、随笔
-- **深度阅读**：大字号（18px），舒适阅读
-
-### 🗞️ 传统媒体系列
-- **杂志风格**：超大号粗体标题，黄色高亮，视觉冲击力强
-- **纽约时报**：经典衬线字体，传统报纸排版
-- **金融时报**：标志性浅粉橙色背景，酒红色强调
-- **Jony Ive**：超大标题 + 极细字重，大量留白
-
-### 🚀 现代数字系列
-- **Wired 连线**：彩色渐变标题，科技未来感
-- **Medium 长文**：超大字号（21px），黄金行高（1.58）
-- **Apple 极简**：超大标题（64px），极简配色
-- **Anthropic Claude**：暖锈橙主色，温暖感 + 技术感
-- **AI Coder 特调**：蓝色渐变标题，GitHub 暗色代码块
-
-## 💡 使用技巧
-
-### 1. Markdown 语法支持
-- 标题：`# H1`、`## H2`、`### H3`
-- 粗体：`**粗体**`
-- 列表：`- 列表项` 或 `1. 有序列表`
-- 引用：`> 引用内容`
-- 代码块：\`\`\`javascript
-- 链接：`[文字](URL)`
-
-### 2. 代码块高亮
-需要指定语言：
-\`\`\`javascript
-function hello() {
-  console.log('Hello World');
-}
-\`\`\`
-
-### 3. 复制到公众号
-- 图片会自动转为 Base64 嵌入（建议图片 ≤10 张）
-- 复制后直接在公众号编辑器粘贴
-- 保持样式不变，背景色完美连续
-
-### 4. 元信息跳过功能
-如果你的文章开头有元信息区块：
-```markdown
-# 标题
-
-**类型**: 产品分析
-**核心观点**: xxx
-
----
-
-正文开始...
-```
-
-选择"🎯 仅正文"模式，会自动跳过第一个 `---` 之前的内容，只复制正文。
-
-## ⚠️ 技术约束
-
-### 微信公众号编辑器的限制
-
-**允许的 HTML 标签**：
-- ✅ `<p>`, `<h1>-<h6>`, `<strong>`, `<em>`, `<a>`, `<ul>`, `<ol>`, `<li>`, `<blockquote>`, `<pre>`, `<code>`, `<img>`, `<table>`, `<section>`
-- ❌ `<div>`, `<span>` 等容器标签会被过滤
-
-**样式限制**：
-- ✅ 内联样式（style 属性）
-- ❌ `<style>` 标签、外部 CSS、CSS 类名
-- ⚠️ 渐变、阴影等高级 CSS 可能被过滤
 
 ## 🛠️ 技术栈
 
-- **Vue.js 3**：响应式框架
-- **markdown-it**：Markdown 渲染
-- **highlight.js**：代码高亮
-- **纯前端**：无需后端，本地运行
+- **Vue 3** - 渐进式前端框架
+- **Markdown-it** - 强大的 Markdown 解析器
+- **Highlight.js** - 代码语法高亮
+- **纯 CSS** - 无需构建工具，开箱即用
 
-## 📁 项目结构
+## 📂 项目结构
 
 ```
 公众号编辑器/
-├── index.html          # 主页面
-├── app.js              # 核心逻辑
-├── styles.js           # 13 种样式定义
-├── start.sh            # 启动脚本
-└── README.md           # 本文档
+├── index.html        # 主页面
+├── app.js           # Vue 应用逻辑
+├── styles.js        # 13 种样式主题配置
+├── icon.svg         # 项目图标
+├── favicon.svg      # 网站图标
+├── logo.svg         # Logo 图标
+├── start.sh         # 启动脚本
+├── README.md        # 项目说明
+├── CLAUDE.md        # 技术文档
+└── LICENSE          # 开源许可证
 ```
 
-## 🎯 设计理念
+## 💡 核心特性
 
-### UI 设计
-遵循两位设计大师的风格：
-- **Dieter Rams**：极简主义，黑白灰配色，功能优先
-- **Josef Müller-Brockmann**：瑞士网格系统，严格的 8px 间距
+### 公众号完美兼容
+- ✅ 自动将 CSS Grid 转换为 Table 布局
+- ✅ 所有样式转为内联样式
+- ✅ 图片自动转 Base64
+- ✅ 强制样式优先级（!important）
 
-### 技术实现
-- **Section 容器法**：背景色完美连续，微信公众号原生支持
-- **实时预览**：Vue.js 响应式，输入即更新
-- **星标收藏**：localStorage 持久化，常用样式快速选择
+### 图片智能处理
+- 连续 2 张图片：并排两列展示
+- 连续 3 张图片：一行三列展示
+- 连续 4 张图片：2×2 网格
+- 5 张及以上：3 列网格布局
 
-## ❓ 常见问题
+### 推荐样式
+带有 ✨ 标识的样式是特别推荐的：
+- **Anthropic Claude** - 优雅的技术文档风格
+- **金融时报** - 专业的财经风格
+- **纽约时报** - 经典的新闻风格
+- **技术风格** - 程序员最爱
 
-### 端口被占用？
-编辑 `start.sh`，将 `8080` 改为其他端口（如 `8081`）。
+## 🤝 贡献指南
 
-### 复制后粘贴到公众号样式不对？
-- 确保使用现代浏览器（Chrome、Edge、Firefox）
-- 复制后直接粘贴，不要先粘贴到其他地方
-- 尝试切换不同样式
+欢迎提交 Issue 和 Pull Request！
 
-### 代码块高亮不显示？
-代码块需要指定语言：
-\`\`\`javascript
-// 代码内容
-\`\`\`
+### 如何贡献
+1. Fork 本仓库
+2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启一个 Pull Request
 
-## 📝 版本记录
+### 添加新样式
+1. 在 `styles.js` 中添加新的样式配置
+2. 确保包含所有必需的元素样式
+3. 测试各种 Markdown 元素的渲染效果
+4. 提交 PR 并附上效果截图
 
-### v1.0 (2025-10-13)
-- 初始版本
-- 13 种样式
-- 星标收藏功能
-- 复制模式选择
-- 元信息跳过功能
+## 👨‍💻 作者
+
+**花生** (alchaincyf)
+- 📧 邮箱：[alchaincyf@gmail.com](mailto:alchaincyf@gmail.com)
+- 🌟 知识星球：[AI编程：从入门到精通](https://wx.zsxq.com/group/48888144124288)
+- 💻 GitHub：[@alchaincyf](https://github.com/alchaincyf)
+
+## 🎓 知识星球
+
+本项目是我为知识星球「**AI编程：从入门到精通**」的用户开源的工具。
+
+在星球里，你可以：
+- 🚀 学习 AI 编程最佳实践
+- 💡 获取更多开源项目
+- 🤝 与同好交流技术
+- 📚 获得系统化的学习路径
+
+👉 [加入知识星球](https://wx.zsxq.com/group/48888144124288)
 
 ## 📄 开源协议
 
-MIT License
+本项目基于 [MIT License](LICENSE) 开源。
+
+你可以自由地：
+- ✅ 商业使用
+- ✅ 修改
+- ✅ 分发
+- ✅ 私有使用
+
+## 🙏 致谢
+
+- 感谢所有贡献者和使用者
+- 感谢知识星球的朋友们的支持
+- 特别感谢 Claude 在项目开发中的协助
+
+## 📊 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=alchaincyf/huasheng_editor&type=Date)](https://star-history.com/#alchaincyf/huasheng_editor&Date)
 
 ---
 
-**说明**：本项目基于内部写作工具改编，专注于公众号排版功能，不包含文件管理和其他写作辅助功能。
-
-如有问题或建议，欢迎反馈！
+<div align="center">
+  Made with ❤️ by <a href="https://github.com/alchaincyf">花生</a>
+  <br>
+  如果觉得有用，请给个 ⭐️ Star 支持一下！
+</div>
