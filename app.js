@@ -487,7 +487,7 @@ const editorApp = createApp({
     return {
       markdownInput: '',
       renderedContent: '',
-      currentStyle: 'wechat-anthropic',
+      currentStyle: 'wechat-default',
       copySuccess: false,
       starredStyles: [],
       toast: {
@@ -509,6 +509,9 @@ const editorApp = createApp({
   async mounted() {
     // 加载星标样式
     this.loadStarredStyles();
+
+    // 加载用户偏好设置
+    this.loadUserPreferences();
 
     // 初始化图片存储管理器
     this.imageStore = new ImageStore();
@@ -560,14 +563,26 @@ const editorApp = createApp({
     });
 
     this.md = md;
+
+    // 手动触发一次渲染（确保初始内容显示）
+    this.$nextTick(() => {
+      this.renderMarkdown();
+    });
   },
 
   watch: {
     currentStyle() {
       this.renderMarkdown();
+      // 保存样式偏好
+      this.saveUserPreferences();
     },
     markdownInput() {
       this.renderMarkdown();
+      // 自动保存内容（防抖）
+      clearTimeout(this._saveTimeout);
+      this._saveTimeout = setTimeout(() => {
+        this.saveUserPreferences();
+      }, 1000); // 1秒后保存
     }
   },
 
@@ -582,6 +597,117 @@ const editorApp = createApp({
         console.error('加载星标样式失败:', error);
         this.starredStyles = [];
       }
+    },
+
+    // 加载用户偏好设置（样式和内容）
+    loadUserPreferences() {
+      try {
+        // 加载样式偏好
+        const savedStyle = localStorage.getItem('currentStyle');
+        if (savedStyle && STYLES[savedStyle]) {
+          this.currentStyle = savedStyle;
+        }
+
+        // 加载上次的内容
+        const savedContent = localStorage.getItem('markdownInput');
+        if (savedContent) {
+          this.markdownInput = savedContent;
+        } else {
+          // 如果没有保存的内容，加载默认示例
+          this.loadDefaultExample();
+        }
+      } catch (error) {
+        console.error('加载用户偏好失败:', error);
+        // 加载失败时使用默认示例
+        this.loadDefaultExample();
+      }
+    },
+
+    // 保存用户偏好设置
+    saveUserPreferences() {
+      try {
+        // 保存当前样式
+        localStorage.setItem('currentStyle', this.currentStyle);
+
+        // 保存当前内容
+        localStorage.setItem('markdownInput', this.markdownInput);
+      } catch (error) {
+        console.error('保存用户偏好失败:', error);
+      }
+    },
+
+    // 加载默认示例文章
+    loadDefaultExample() {
+      this.markdownInput = `![](https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=1200&h=400&fit=crop)
+
+# 公众号 Markdown 编辑器
+
+欢迎使用这款专为**微信公众号**设计的 Markdown 编辑器！✨
+
+## 🎯 核心功能
+
+### 1. 智能图片处理
+
+![](https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&h=500&fit=crop)
+
+- **粘贴即用**：支持从任何地方复制粘贴图片（截图、浏览器、文件管理器）
+- **自动压缩**：图片自动压缩，平均压缩 50%-80%
+- **本地存储**：使用 IndexedDB 持久化，刷新不丢失
+- **编辑流畅**：编辑器中使用短链接，告别卡顿
+
+### 2. 多图排版展示
+
+支持朋友圈式的多图网格布局，2-3 列自动排版：
+
+![](https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600&h=400&fit=crop)
+![](https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=400&fit=crop)
+![](https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=400&fit=crop)
+
+### 3. 13 种精美样式
+
+1. **经典公众号系列**：默认、技术、优雅、深度阅读
+2. **传统媒体系列**：杂志、纽约时报、金融时报、Jony Ive
+3. **现代数字系列**：Wired、Medium、Apple、Claude、AI Coder
+
+### 4. 一键复制
+
+点击「复制到公众号」按钮，直接粘贴到公众号后台，格式完美保留！
+
+## 💻 代码示例
+
+\`\`\`javascript
+// 图片自动压缩并存储到 IndexedDB
+const compressedBlob = await imageCompressor.compress(file);
+await imageStore.saveImage(imageId, compressedBlob);
+
+// 编辑器中插入短链接
+const markdown = \`![图片](img://\${imageId})\`;
+\`\`\`
+
+## 📖 引用样式
+
+> 这是一段引用文字，展示编辑器的引用样式效果。
+>
+> 不同的样式主题会有不同的引用样式，试试切换样式看看效果！
+
+## 📊 表格支持
+
+| 功能 | 支持情况 | 说明 |
+|------|---------|------|
+| 图片粘贴 | ✅ | 100% 成功率 |
+| 刷新保留 | ✅ | IndexedDB 存储 |
+| 样式主题 | ✅ | 13 种精选样式 |
+| 代码高亮 | ✅ | 多语言支持 |
+
+---
+
+**💡 提示**：
+
+- 试着切换不同的样式主题，体验各种风格的排版效果
+- 粘贴图片试试智能压缩功能
+- 刷新页面看看内容是否保留
+
+**🌟 开源项目**：如果觉得有用，欢迎访问 [GitHub 仓库](https://github.com/alchaincyf/huasheng_editor) 给个 Star！`;
     },
 
     handleFileUpload(event) {
@@ -1266,7 +1392,7 @@ const editorApp = createApp({
 
     isRecommended(styleKey) {
       // 推荐的样式
-      const recommended = ['latepost-depth', 'wechat-anthropic', 'wechat-ft', 'wechat-nyt', 'wechat-tech'];
+      const recommended = ['nikkei', 'wechat-anthropic', 'wechat-ft', 'wechat-nyt', 'latepost-depth', 'wechat-tech'];
       return recommended.includes(styleKey);
     },
 
