@@ -1520,14 +1520,17 @@ const markdown = \`![图片](img://\${imageId})\`;
 
     // 处理粘贴事件
     async handleSmartPaste(event) {
+      console.log('===== handleSmartPaste 被调用 =====');
+
       const clipboardData = event.clipboardData || event.originalEvent?.clipboardData;
 
       if (!clipboardData) {
+        console.log('不支持 clipboardData');
         return; // 不支持的浏览器，使用默认行为
       }
 
       // 调试模式（需要时可以打开）
-      const DEBUG = false;
+      const DEBUG = true;
       if (DEBUG) {
         console.log('剪贴板数据类型:', Array.from(clipboardData.types || []));
       }
@@ -1573,17 +1576,23 @@ const markdown = \`![图片](img://\${imageId})\`;
         return; // 不插入占位符文本
       }
 
-      // 首先检查纯文本是否已经是 Markdown（优先级最高）
-      if (textData && this.isMarkdown(textData)) {
-        // 已经是 Markdown，直接使用纯文本，忽略 HTML
-        if (DEBUG) console.log('检测到 Markdown 格式，使用纯文本');
-        return; // 使用默认粘贴行为
+      if (DEBUG) {
+        console.log('纯文本数据:', textData?.substring(0, 200));
+        console.log('HTML 数据:', htmlData?.substring(0, 200));
+        console.log('是否检测为 Markdown:', textData && this.isMarkdown(textData));
+        console.log('是否有 turndownService:', !!this.turndownService);
       }
-      // 如果有 HTML 数据，说明可能来自富文本编辑器（如飞书、Notion、Word）
-      else if (htmlData && htmlData.trim() !== '' && this.turndownService) {
-        // 检查是否是从代码编辑器复制的（通常会包含 <pre> 或 <code> 标签）
-        if (htmlData.includes('<pre') || htmlData.includes('<code')) {
-          // 可能是从代码编辑器复制的，使用纯文本
+
+      // 优先检查 HTML 数据（如果有 HTML，说明来自富文本编辑器，应该转换）
+      if (htmlData && htmlData.trim() !== '' && this.turndownService) {
+        // 检查是否是从代码编辑器复制的（精确匹配真正的代码块标签，避免误判）
+        // 只有当 HTML 主要由 <pre> 或 <code> 组成时才跳过转换
+        const hasPreTag = /<pre[\s>]/.test(htmlData);
+        const hasCodeTag = /<code[\s>]/.test(htmlData);
+        const isMainlyCode = (hasPreTag || hasCodeTag) && !htmlData.includes('<p') && !htmlData.includes('<div');
+
+        if (isMainlyCode) {
+          // 真正的代码编辑器内容，使用纯文本
           if (DEBUG) console.log('检测到代码编辑器格式，使用纯文本');
           return; // 使用默认粘贴行为
         }
@@ -1631,8 +1640,15 @@ const markdown = \`![图片](img://\${imageId})\`;
           this.insertTextAtCursor(event.target, textData);
         }
       }
+      // 检查纯文本是否为 Markdown（后备方案，只有在没有 HTML 时才检查）
+      else if (textData && this.isMarkdown(textData)) {
+        // 已经是 Markdown，直接使用纯文本
+        if (DEBUG) console.log('没有 HTML，但检测到 Markdown 格式，使用纯文本');
+        return; // 使用默认粘贴行为
+      }
       // 普通文本，使用默认粘贴行为
       else {
+        if (DEBUG) console.log('普通文本，使用默认粘贴行为');
         return; // 使用默认行为
       }
     },
