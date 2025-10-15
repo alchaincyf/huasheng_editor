@@ -33,6 +33,9 @@
   <!-- Vue.js -->
   <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
 
+  <!-- html2canvas - 用于生成小红书图片 -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
   <style>
     :root {
       --color-primary: #000;
@@ -344,14 +347,21 @@
       gap: 12px;
     }
 
+    .mode-switcher {
+      display: flex;
+      gap: 4px;
+      background: var(--color-bg);
+      border-radius: 6px;
+      padding: 2px;
+    }
 
     .mode-toggle-btn {
-      padding: 4px 8px;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
       border-radius: 4px;
       color: var(--color-secondary);
-      font-size: 11px;
+      font-size: 12px;
       cursor: pointer;
       transition: all 120ms;
       display: flex;
@@ -362,15 +372,13 @@
     }
 
     .mode-toggle-btn:hover {
-      background: var(--color-bg);
-      border-color: var(--color-accent);
-      color: var(--color-accent);
+      color: var(--color-primary);
     }
 
     .mode-toggle-btn.active {
-      background: var(--color-accent);
-      color: var(--color-surface);
-      border-color: var(--color-accent);
+      background: var(--color-surface);
+      color: var(--color-primary);
+      font-weight: 500;
     }
 
     .mode-toggle-btn svg {
@@ -597,6 +605,96 @@
 
     .empty-state p {
       font-size: 13px;
+      color: var(--color-tertiary);
+    }
+
+    /* 小红书预览样式 */
+    .xiaohongshu-preview {
+      padding: var(--space-lg);
+      overflow-y: auto;
+    }
+
+    .xiaohongshu-controls {
+      display: flex;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .xiaohongshu-btn {
+      padding: 8px 16px;
+      background: var(--color-primary);
+      color: var(--color-surface);
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 120ms;
+    }
+
+    .xiaohongshu-btn:hover {
+      opacity: 0.8;
+    }
+
+    .xiaohongshu-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .xiaohongshu-btn.secondary {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      border: 1px solid var(--color-border);
+    }
+
+    .xiaohongshu-images-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-md);
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .xiaohongshu-image-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 120ms;
+      cursor: pointer;
+    }
+
+    .xiaohongshu-image-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .xiaohongshu-image-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .xiaohongshu-image-label {
+      padding: var(--space-sm);
+      text-align: center;
+      font-size: 12px;
+      color: var(--color-secondary);
+      background: var(--color-bg);
+    }
+
+    .xiaohongshu-loading {
+      text-align: center;
+      padding: var(--space-xl);
+      color: var(--color-secondary);
+    }
+
+    .xiaohongshu-empty {
+      text-align: center;
+      padding: var(--space-xl);
       color: var(--color-tertiary);
     }
 
@@ -892,6 +990,32 @@
         <div class="preview-header">
           <div class="preview-title">
             预览
+            <!-- 小红书功能入口已隐藏，待调试完成后再开放 -->
+            <!-- <div class="mode-switcher" style="display: none;">
+              <button
+                class="mode-toggle-btn"
+                :class="{ active: previewMode === 'wechat' }"
+                @click="previewMode = 'wechat'"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                公众号
+              </button>
+              <button
+                class="mode-toggle-btn"
+                :class="{ active: previewMode === 'xiaohongshu' }"
+                @click="previewMode = 'xiaohongshu'"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                小红书
+              </button>
+            </div> -->
           </div>
           <div class="preview-actions">
             <button
@@ -915,6 +1039,7 @@
           </div>
         </div>
 
+        <!-- 公众号预览模式 -->
         <div class="preview-content">
           <div v-if="!renderedContent" class="empty-state">
             <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -925,6 +1050,48 @@
           </div>
           <div v-else class="preview-container" v-html="renderedContent"></div>
         </div>
+
+        <!-- 小红书预览模式（已隐藏） -->
+        <!-- <div v-if="previewMode === 'xiaohongshu'" class="xiaohongshu-preview">
+          <div class="xiaohongshu-controls">
+            <button
+              class="xiaohongshu-btn"
+              :disabled="!renderedContent || xiaohongshuGenerating"
+              @click="generateXiaohongshuImages"
+            >
+              {{ xiaohongshuGenerating ? '生成中...' : '生成小红书图片' }}
+            </button>
+            <button
+              class="xiaohongshu-btn secondary"
+              :disabled="xiaohongshuImages.length === 0"
+              @click="downloadAllXiaohongshuImages"
+            >
+              批量下载 ({{ xiaohongshuImages.length }})
+            </button>
+          </div>
+
+          <div v-if="xiaohongshuGenerating" class="xiaohongshu-loading">
+            <p>正在生成小红书图片，请稍候...</p>
+          </div>
+
+          <div v-else-if="xiaohongshuImages.length === 0" class="xiaohongshu-empty">
+            <p>点击「生成小红书图片」按钮，将内容转换为适合小红书发布的多图</p>
+          </div>
+
+          <div v-else class="xiaohongshu-images-grid">
+            <div
+              v-for="(image, index) in xiaohongshuImages"
+              :key="index"
+              class="xiaohongshu-image-card"
+              @click="downloadXiaohongshuImage(image, index)"
+            >
+              <img :src="image.dataUrl" :alt="`第 ${index + 1} 张`">
+              <div class="xiaohongshu-image-label">
+                第 {{ index + 1 }} / {{ xiaohongshuImages.length }} 张
+              </div>
+            </div>
+          </div>
+        </div> -->
       </div>
     </div>
 

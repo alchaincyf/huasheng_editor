@@ -502,7 +502,11 @@ const editorApp = createApp({
       imageHostManager: new ImageHostManager(),  // 图床管理器（已废弃，保留兼容）
       imageStore: null,  // 图片存储管理器（IndexedDB）
       imageCompressor: null,  // 图片压缩器
-      imageIdToObjectURL: {}  // 图片 ID 到 Object URL 的映射（用于预览时替换）
+      imageIdToObjectURL: {},  // 图片 ID 到 Object URL 的映射（用于预览时替换）
+      // 小红书相关
+      previewMode: 'wechat',  // 预览模式：'wechat' 或 'xiaohongshu'
+      xiaohongshuImages: [],  // 生成的小红书图片数组
+      xiaohongshuGenerating: false  // 是否正在生成小红书图片
     };
   },
 
@@ -572,12 +576,16 @@ const editorApp = createApp({
 
   watch: {
     currentStyle() {
-      this.renderMarkdown();
+      if (this.md) {
+        this.renderMarkdown();
+      }
       // 保存样式偏好
       this.saveUserPreferences();
     },
     markdownInput() {
-      this.renderMarkdown();
+      if (this.md) {
+        this.renderMarkdown();
+      }
       // 自动保存内容（防抖）
       clearTimeout(this._saveTimeout);
       this._saveTimeout = setTimeout(() => {
@@ -730,6 +738,12 @@ const markdown = \`![图片](img://\${imageId})\`;
     async renderMarkdown() {
       if (!this.markdownInput.trim()) {
         this.renderedContent = '';
+        return;
+      }
+
+      // 检查 markdown-it 是否已初始化
+      if (!this.md) {
+        console.warn('markdown-it 尚未初始化，跳过渲染');
         return;
       }
 
@@ -1779,6 +1793,430 @@ const markdown = \`![图片](img://\${imageId})\`;
       if (event.target.classList.contains('markdown-input')) {
         this.isDraggingOver = false;
       }
+    },
+
+    // ============ 小红书功能相关方法 ============
+
+    // 生成小红书图片
+    async generateXiaohongshuImages() {
+      if (!this.renderedContent) {
+        this.showToast('没有内容可生成', 'error');
+        return;
+      }
+
+      if (typeof html2canvas === 'undefined') {
+        this.showToast('html2canvas 库未加载', 'error');
+        return;
+      }
+
+      this.xiaohongshuGenerating = true;
+      this.xiaohongshuImages = [];
+
+      try {
+        // 创建临时渲染容器
+        const tempContainer = this.createXiaohongshuContainer();
+        document.body.appendChild(tempContainer);
+
+        // 计算文章信息
+        const articleInfo = this.calculateArticleInfo();
+
+        // 分页
+        const pages = await this.splitContentIntoPages(tempContainer, articleInfo);
+
+        if (pages.length === 0) {
+          throw new Error('内容为空，无法生成图片');
+        }
+
+        // 生成每一页的图片
+        for (let i = 0; i < pages.length; i++) {
+          const pageElement = pages[i];
+
+          // 添加页码
+          this.addPageNumber(pageElement, i + 1, pages.length);
+
+          // 如果是首页，添加信息面板
+          if (i === 0) {
+            this.addInfoPanel(pageElement, articleInfo);
+          }
+
+          // 将页面元素添加到容器中，确保 html2canvas 可以找到它
+          tempContainer.appendChild(pageElement);
+
+          // 等待一小段时间确保元素渲染完成
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // 生成图片
+          const canvas = await html2canvas(pageElement, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: this.getBackgroundColor(),
+            width: 750,
+            height: 1000,
+            windowWidth: 750,
+            windowHeight: 1000,
+            logging: false
+          });
+
+          const dataUrl = canvas.toDataURL('image/png');
+          this.xiaohongshuImages.push({
+            dataUrl: dataUrl,
+            pageNumber: i + 1,
+            totalPages: pages.length
+          });
+
+          // 移除页面元素，准备下一页
+          tempContainer.removeChild(pageElement);
+        }
+
+        // 清理临时容器
+        document.body.removeChild(tempContainer);
+
+        this.showToast(`成功生成 ${pages.length} 张小红书图片`, 'success');
+      } catch (error) {
+        console.error('生成小红书图片失败:', error);
+        this.showToast('生成失败: ' + error.message, 'error');
+
+        // 确保清理临时容器
+        const existingContainer = document.querySelector('div[style*="-9999px"]');
+        if (existingContainer) {
+          document.body.removeChild(existingContainer);
+        }
+      } finally {
+        this.xiaohongshuGenerating = false;
+      }
+    },
+
+    // 创建小红书渲染容器
+    createXiaohongshuContainer() {
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '750px';
+      container.style.pointerEvents = 'none';
+      container.style.zIndex = '-1';
+      // 不设置 visibility: hidden，因为 html2canvas 需要可见元素
+      return container;
+    },
+
+    // 计算文章信息
+    calculateArticleInfo() {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(this.renderedContent, 'text/html');
+
+      // 计算字数（去除HTML标签）
+      const textContent = doc.body.textContent || '';
+      const charCount = textContent.replace(/\s/g, '').length;
+
+      // 计算阅读时长（假设每分钟阅读400字）
+      const readingTime = Math.ceil(charCount / 400);
+
+      // 计算图片数量
+      const imageCount = doc.querySelectorAll('img').length;
+
+      return {
+        charCount,
+        readingTime,
+        imageCount
+      };
+    },
+
+    // 分页算法 - 完全简化版本
+    async splitContentIntoPages(container, articleInfo) {
+      // 解析 Markdown 为纯文本结构（不使用复杂的渲染样式）
+      const simplifiedContent = this.createSimplifiedContent();
+
+      const pages = [];
+      const maxPageHeight = 850; // 留出空间给页码和首页信息面板
+
+      // 创建测量容器
+      const measureContainer = this.createPageElement();
+      container.appendChild(measureContainer);
+
+      let currentPageContent = [];
+      let currentHeight = 0;
+      const firstPageOffset = 120; // 首页信息面板占用空间
+
+      for (let i = 0; i < simplifiedContent.length; i++) {
+        const block = simplifiedContent[i];
+
+        // 创建元素
+        const element = this.createSimplifiedElement(block);
+
+        // 添加到测量容器
+        measureContainer.appendChild(element);
+        const elementHeight = element.offsetHeight || 50;
+
+        // 计算是否超出页面高度
+        const heightLimit = pages.length === 0 ? maxPageHeight - firstPageOffset : maxPageHeight;
+        const wouldExceed = currentHeight + elementHeight > heightLimit;
+
+        if (wouldExceed && currentPageContent.length > 0) {
+          // 创建新页面
+          const page = this.createPageElement();
+          currentPageContent.forEach(el => page.appendChild(el));
+          pages.push(page);
+
+          currentPageContent = [];
+          currentHeight = 0;
+        }
+
+        // 从测量容器移除
+        measureContainer.removeChild(element);
+        currentPageContent.push(element);
+        currentHeight += elementHeight;
+      }
+
+      // 添加最后一页
+      if (currentPageContent.length > 0) {
+        const page = this.createPageElement();
+        currentPageContent.forEach(el => page.appendChild(el));
+        pages.push(page);
+      }
+
+      // 清理测量容器
+      container.removeChild(measureContainer);
+
+      return pages;
+    },
+
+    // 创建简化的内容结构（纯文本，无复杂样式）
+    createSimplifiedContent() {
+      const lines = this.markdownInput.split('\n');
+      const content = [];
+
+      lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
+
+        // 标题
+        if (line.startsWith('# ')) {
+          content.push({ type: 'h1', text: line.substring(2) });
+        } else if (line.startsWith('## ')) {
+          content.push({ type: 'h2', text: line.substring(3) });
+        } else if (line.startsWith('### ')) {
+          content.push({ type: 'h3', text: line.substring(4) });
+        }
+        // 列表
+        else if (line.startsWith('- ') || line.startsWith('* ')) {
+          content.push({ type: 'li', text: line.substring(2) });
+        }
+        // 引用
+        else if (line.startsWith('> ')) {
+          content.push({ type: 'quote', text: line.substring(2) });
+        }
+        // 代码块标记（跳过）
+        else if (line.startsWith('```')) {
+          // 跳过代码块
+        }
+        // 图片（跳过，小红书图片由外链显示）
+        else if (line.startsWith('![')) {
+          // 跳过图片
+        }
+        // 分隔线
+        else if (line === '---') {
+          content.push({ type: 'hr' });
+        }
+        // 普通段落
+        else {
+          // 移除 Markdown 格式标记
+          let text = line.replace(/\*\*(.+?)\*\*/g, '$1'); // 粗体
+          text = text.replace(/\*(.+?)\*/g, '$1'); // 斜体
+          text = text.replace(/`(.+?)`/g, '$1'); // 行内代码
+          content.push({ type: 'p', text: text });
+        }
+      });
+
+      return content;
+    },
+
+    // 创建简化的元素（只使用基本的内联样式）
+    createSimplifiedElement(block) {
+      const el = document.createElement('div');
+
+      switch (block.type) {
+        case 'h1':
+          el.textContent = block.text;
+          el.style.fontSize = '28px';
+          el.style.fontWeight = 'bold';
+          el.style.margin = '20px 0 10px 0';
+          el.style.color = '#000';
+          break;
+        case 'h2':
+          el.textContent = block.text;
+          el.style.fontSize = '24px';
+          el.style.fontWeight = 'bold';
+          el.style.margin = '16px 0 8px 0';
+          el.style.color = '#000';
+          break;
+        case 'h3':
+          el.textContent = block.text;
+          el.style.fontSize = '20px';
+          el.style.fontWeight = 'bold';
+          el.style.margin = '12px 0 6px 0';
+          el.style.color = '#333';
+          break;
+        case 'p':
+          el.textContent = block.text;
+          el.style.fontSize = '16px';
+          el.style.lineHeight = '1.8';
+          el.style.margin = '8px 0';
+          el.style.color = '#333';
+          break;
+        case 'li':
+          el.textContent = '• ' + block.text;
+          el.style.fontSize = '16px';
+          el.style.lineHeight = '1.8';
+          el.style.margin = '4px 0';
+          el.style.paddingLeft = '10px';
+          el.style.color = '#333';
+          break;
+        case 'quote':
+          el.textContent = block.text;
+          el.style.fontSize = '15px';
+          el.style.lineHeight = '1.8';
+          el.style.margin = '8px 0';
+          el.style.padding = '10px 15px';
+          el.style.borderLeft = '3px solid #0066FF';
+          el.style.background = '#f5f5f5';
+          el.style.color = '#666';
+          break;
+        case 'hr':
+          el.style.height = '1px';
+          el.style.background = '#ddd';
+          el.style.margin = '20px 0';
+          el.style.border = 'none';
+          break;
+      }
+
+      return el;
+    },
+
+    // 创建页面元素
+    createPageElement() {
+      const page = document.createElement('div');
+      page.style.width = '750px';
+      page.style.height = '1000px';
+      page.style.backgroundColor = this.getBackgroundColor();
+      page.style.padding = '80px 40px 40px 40px';
+      page.style.boxSizing = 'border-box';
+      page.style.position = 'relative';
+      page.style.overflow = 'hidden';
+      page.style.fontFamily = 'Arial';
+      page.style.fontSize = '16px';
+      page.style.lineHeight = '1.8';
+      page.style.color = '#333';
+      return page;
+    },
+
+    // 添加页码
+    addPageNumber(pageElement, currentPage, totalPages) {
+      const pageNumber = document.createElement('div');
+      pageNumber.textContent = `${currentPage}/${totalPages}`;
+      pageNumber.style.position = 'absolute';
+      pageNumber.style.bottom = '30px';
+      pageNumber.style.right = '40px';
+      pageNumber.style.fontSize = '14px';
+      pageNumber.style.color = '#999';
+      pageNumber.style.fontWeight = '500';
+      pageElement.appendChild(pageNumber);
+    },
+
+    // 添加首页信息面板
+    addInfoPanel(pageElement, articleInfo) {
+      const panel = document.createElement('div');
+      panel.style.position = 'absolute';
+      panel.style.top = '20px';
+      panel.style.left = '40px';
+      panel.style.right = '40px';
+      panel.style.padding = '20px';
+      panel.style.backgroundColor = '#E6F0FF';
+      panel.style.borderRadius = '8px';
+      panel.style.border = '1px solid #99CCFF';
+
+      const infoItems = [
+        { label: '字数', value: articleInfo.charCount },
+        { label: '阅读', value: `${articleInfo.readingTime}分钟` },
+        { label: '图片', value: `${articleInfo.imageCount}张` }
+      ];
+
+      // 创建容器（使用 table 布局）
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      const tr = document.createElement('tr');
+
+      infoItems.forEach(item => {
+        const td = document.createElement('td');
+        td.style.textAlign = 'center';
+        td.style.padding = '5px';
+
+        const valueDiv = document.createElement('div');
+        valueDiv.textContent = item.value;
+        valueDiv.style.fontSize = '24px';
+        valueDiv.style.fontWeight = 'bold';
+        valueDiv.style.color = '#0066FF';
+        valueDiv.style.marginBottom = '4px';
+
+        const labelDiv = document.createElement('div');
+        labelDiv.textContent = item.label;
+        labelDiv.style.fontSize = '12px';
+        labelDiv.style.color = '#666';
+
+        td.appendChild(valueDiv);
+        td.appendChild(labelDiv);
+        tr.appendChild(td);
+      });
+
+      table.appendChild(tr);
+      panel.appendChild(table);
+
+      // 插入到页面顶部
+      pageElement.insertBefore(panel, pageElement.firstChild);
+    },
+
+    // 获取背景色
+    getBackgroundColor() {
+      const styleConfig = STYLES[this.currentStyle];
+      if (styleConfig && styleConfig.styles && styleConfig.styles.container) {
+        const bgColor = this.extractBackgroundColor(styleConfig.styles.container);
+        return bgColor || '#FFFFFF';
+      }
+      return '#FFFFFF';
+    },
+
+    // 下载单张小红书图片
+    downloadXiaohongshuImage(image, index) {
+      const link = document.createElement('a');
+      link.download = `小红书-第${index + 1}张-共${this.xiaohongshuImages.length}张.png`;
+      link.href = image.dataUrl;
+      link.click();
+      this.showToast(`下载第 ${index + 1} 张图片`, 'success');
+    },
+
+    // 批量下载小红书图片
+    async downloadAllXiaohongshuImages() {
+      if (this.xiaohongshuImages.length === 0) {
+        this.showToast('没有图片可下载', 'error');
+        return;
+      }
+
+      this.showToast(`开始下载 ${this.xiaohongshuImages.length} 张图片...`, 'success');
+
+      for (let i = 0; i < this.xiaohongshuImages.length; i++) {
+        const image = this.xiaohongshuImages[i];
+
+        // 添加延迟，避免浏览器阻止批量下载
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const link = document.createElement('a');
+        link.download = `小红书-第${i + 1}张-共${this.xiaohongshuImages.length}张.png`;
+        link.href = image.dataUrl;
+        link.click();
+      }
+
+      this.showToast('批量下载完成', 'success');
     }
   }
 });
