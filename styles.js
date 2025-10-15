@@ -3,7 +3,7 @@ const STYLES = {
   'wechat-default': {
     name: '默认公众号风格',
     styles: {
-      container: 'max-width: 740px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.8 !important; color: #3f3f3f !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 740px; margin: 0 auto; padding: 20px 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.8 !important; color: #3f3f3f !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 24px; font-weight: 600; color: #2c3e50 !important; line-height: 1.4 !important; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #3498db;',
       h2: 'font-size: 22px; font-weight: 600; color: #2c3e50 !important; line-height: 1.4 !important; margin: 28px 0 14px; padding-left: 12px; border-left: 4px solid #3498db;',
       h3: 'font-size: 20px; font-weight: 600; color: #34495e !important; line-height: 1.4 !important; margin: 24px 0 12px;',
@@ -61,7 +61,7 @@ const STYLES = {
   'wechat-elegant': {
     name: '优雅简约',
     styles: {
-      container: 'max-width: 720px; margin: 0 auto; padding: 30px 20px; font-family: "Songti SC", "SimSun", Georgia, serif; font-size: 17px; line-height: 2 !important; color: #333 !important; background-color: #fefefe !important; word-wrap: break-word;',
+      container: 'max-width: 720px; margin: 0 auto; padding: 30px 20px; font-family: "Songti SC", "SimSun", Georgia, serif; font-size: 17px; line-height: 2 !important; color: #333 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 28px; font-weight: 400; color: #1a1a1a !important; line-height: 1.5 !important; margin: 48px 0 24px; text-align: center; letter-spacing: 2px;',
       h2: 'font-size: 24px; font-weight: 400; color: #2c2c2c !important; line-height: 1.5 !important; margin: 40px 0 20px; text-align: center; letter-spacing: 1px;',
       h3: 'font-size: 20px; font-weight: 400; color: #3a3a3a !important; line-height: 1.6 !important; margin: 32px 0 16px; letter-spacing: 0.5px;',
@@ -90,7 +90,7 @@ const STYLES = {
   'wechat-deepread': {
     name: '深度阅读',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 32px 24px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.75 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: 0.01em;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 32px 12px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.75 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: 0.01em;',
       h1: 'font-size: 32px; font-weight: 700; color: #0a0a0a !important; line-height: 1.2 !important; margin: 48px 0 24px; letter-spacing: -0.02em;',
       h2: 'font-size: 28px; font-weight: 700; color: #0a0a0a !important; line-height: 1.3 !important; margin: 40px 0 20px; letter-spacing: -0.01em;',
       h3: 'font-size: 22px; font-weight: 600; color: #1a1a1a !important; line-height: 1.4 !important; margin: 32px 0 16px;',
@@ -119,7 +119,7 @@ const STYLES = {
 'wechat-nyt': {
     name: '纽约时报',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 48px 32px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 18px; line-height: 1.8 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 48px 12px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 18px; line-height: 1.8 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 42px; font-weight: 700; color: #000 !important; line-height: 1.2 !important; margin: 56px 0 16px; font-family: Georgia, serif; letter-spacing: -0.02em; border-bottom: 1px solid #000; padding-bottom: 16px;',
       h2: 'font-size: 32px; font-weight: 700; color: #000 !important; line-height: 1.3 !important; margin: 48px 0 16px; font-family: Georgia, serif; letter-spacing: -0.01em;',
       h3: 'font-size: 24px; font-weight: 700; color: #121212 !important; line-height: 1.4 !important; margin: 40px 0 16px; font-family: Georgia, serif;',
@@ -148,7 +148,7 @@ const STYLES = {
   'wechat-ft': {
     name: '金融时报',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 40px 32px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 17px; line-height: 1.75 !important; color: #33302e !important; background-color: #fff1e5 !important; word-wrap: break-word;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 40px 20px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 17px; line-height: 1.75 !important; color: #33302e !important; background-color: #fff1e5 !important; word-wrap: break-word;',
       h1: 'font-size: 38px; font-weight: 600; color: #000 !important; line-height: 1.2 !important; margin: 56px 0 24px; font-family: Georgia, serif; letter-spacing: -0.01em; border-bottom: 4px solid #990f3d; padding-bottom: 16px;',
       h2: 'font-size: 30px; font-weight: 600; color: #990f3d !important; line-height: 1.3 !important; margin: 48px 0 20px; font-family: Georgia, serif; border-left: 6px solid #990f3d; padding-left: 20px;',
       h3: 'font-size: 24px; font-weight: 600; color: #33302e !important; line-height: 1.4 !important; margin: 40px 0 16px; font-family: Georgia, serif; border-bottom: 2px solid #cec6b9; padding-bottom: 8px;',
@@ -177,7 +177,7 @@ const STYLES = {
   'wechat-jonyive': {
     name: 'Jony Ive',
     styles: {
-      container: 'max-width: 620px; margin: 0 auto; padding: 80px 40px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #6e6e73 !important; background-color: #fbfbfd !important; word-wrap: break-word;',
+      container: 'max-width: 620px; margin: 0 auto; padding: 80px 24px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #6e6e73 !important; background-color: #fbfbfd !important; word-wrap: break-word;',
       h1: 'font-size: 56px; font-weight: 200; color: #1d1d1f !important; line-height: 1.05 !important; margin: 96px 0 48px; letter-spacing: -0.03em;',
       h2: 'font-size: 40px; font-weight: 300; color: #1d1d1f !important; line-height: 1.1 !important; margin: 80px 0 40px; letter-spacing: -0.02em;',
       h3: 'font-size: 28px; font-weight: 400; color: #1d1d1f !important; line-height: 1.15 !important; margin: 64px 0 32px; letter-spacing: -0.01em;',
@@ -206,7 +206,7 @@ const STYLES = {
 'wechat-medium': {
     name: 'Medium 长文',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 48px 32px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 21px; line-height: 1.58 !important; color: #242424 !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: -0.003em;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 48px 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 21px; line-height: 1.58 !important; color: #242424 !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: -0.003em;',
       h1: 'font-size: 42px; font-weight: 700; color: #242424 !important; line-height: 1.15 !important; margin: 56px 0 24px; letter-spacing: -0.022em; font-family: Georgia, "Times New Roman", serif;',
       h2: 'font-size: 34px; font-weight: 700; color: #242424 !important; line-height: 1.2 !important; margin: 48px 0 20px; letter-spacing: -0.019em; font-family: Georgia, "Times New Roman", serif;',
       h3: 'font-size: 28px; font-weight: 700; color: #242424 !important; line-height: 1.25 !important; margin: 40px 0 16px; letter-spacing: -0.014em; font-family: Georgia, "Times New Roman", serif;',
@@ -235,7 +235,7 @@ const STYLES = {
   'wechat-apple': {
     name: 'Apple 极简',
     styles: {
-      container: 'max-width: 640px; margin: 0 auto; padding: 48px 32px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #86868b !important; background-color: #fbfbfd !important; word-wrap: break-word;',
+      container: 'max-width: 640px; margin: 0 auto; padding: 48px 12px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #86868b !important; background-color: #fbfbfd !important; word-wrap: break-word;',
       h1: 'font-size: 48px; font-weight: 600; color: #1d1d1f !important; line-height: 1.1 !important; margin: 48px 0 24px; letter-spacing: -0.015em;',
       h2: 'font-size: 36px; font-weight: 600; color: #1d1d1f !important; line-height: 1.15 !important; margin: 40px 0 20px; letter-spacing: -0.012em;',
       h3: 'font-size: 28px; font-weight: 600; color: #1d1d1f !important; line-height: 1.2 !important; margin: 32px 0 16px; letter-spacing: -0.009em;',
@@ -264,7 +264,7 @@ const STYLES = {
 'wechat-anthropic': {
     name: 'Claude',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 56px 40px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.7 !important; color: #2b2b2b !important; background-color: #faf9f7 !important; word-wrap: break-word; letter-spacing: -0.01em;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 56px 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.7 !important; color: #2b2b2b !important; background-color: #faf9f7 !important; word-wrap: break-word; letter-spacing: -0.01em;',
       h1: 'font-size: 48px; font-weight: 600; color: #191919 !important; line-height: 1.15 !important; margin: 64px 0 32px; letter-spacing: -0.025em; background: linear-gradient(135deg, #C15F3C 0%, #e97d5b 50%, #CC8B7A 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent !important;',
       h2: 'font-size: 36px; font-weight: 600; color: #191919 !important; line-height: 1.25 !important; margin: 56px 0 28px; letter-spacing: -0.02em; background: linear-gradient(135deg, #C15F3C 0%, #9DC88D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent !important;',
       h3: 'font-size: 28px; font-weight: 600; color: #2b2b2b !important; line-height: 1.3 !important; margin: 48px 0 24px; letter-spacing: -0.015em;',
@@ -294,7 +294,7 @@ const STYLES = {
   'kenya-emptiness': {
     name: '原研哉·空',
     styles: {
-      container: 'max-width: 640px; margin: 0 auto; padding: 80px 60px; font-family: "Hiragino Sans", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 2.5 !important; color: #333 !important; background-color: #fafafa !important; word-wrap: break-word;',
+      container: 'max-width: 640px; margin: 0 auto; padding: 80px 24px; font-family: "Hiragino Sans", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 2.5 !important; color: #333 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 24px; font-weight: 300; color: #000 !important; line-height: 2 !important; margin: 80px 0 60px; letter-spacing: 0.5em; text-align: center; padding: 0;',
       h2: 'font-size: 18px; font-weight: 300; color: #333 !important; line-height: 2 !important; margin: 70px 0 40px; letter-spacing: 0.3em; padding-left: 40px;',
       h3: 'font-size: 16px; font-weight: 400; color: #666 !important; line-height: 2 !important; margin: 60px 0 30px; letter-spacing: 0.2em;',
@@ -323,7 +323,7 @@ const STYLES = {
   'hische-editorial': {
     name: 'Hische·编辑部',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 70px 50px; font-family: "Crimson Text", Garamond, serif; font-size: 19px; line-height: 1.75 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 70px 20px; font-family: "Crimson Text", Garamond, serif; font-size: 19px; line-height: 1.75 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
       h1: 'font-size: 52px; font-weight: 400; color: #c9302c !important; line-height: 1.15 !important; margin: 70px 0 35px; letter-spacing: -0.03em; font-family: "Bodoni MT", "Didot", serif; text-align: center;',
       h2: 'font-size: 38px; font-weight: 400; color: #2c2c2c !important; line-height: 1.25 !important; margin: 60px 0 30px; letter-spacing: -0.02em; font-family: "Bodoni MT", "Didot", serif; border-top: 1px solid #c9302c; border-bottom: 1px solid #c9302c; padding: 15px 0; text-align: center;',
       h3: 'font-size: 30px; font-weight: 400; color: #2c2c2c !important; line-height: 1.35 !important; margin: 50px 0 25px; font-family: "Bodoni MT", "Didot", serif;',
@@ -353,7 +353,7 @@ const STYLES = {
   'ando-concrete': {
     name: '安藤·清水',
     styles: {
-      container: 'max-width: 600px; margin: 0 auto; padding: 60px 60px 80px 60px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 2 !important; color: #4a4a4a !important; background-color: #f5f5f5 !important; word-wrap: break-word;',
+      container: 'max-width: 600px; margin: 0 auto; padding: 60px 24px 80px 24px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 2 !important; color: #4a4a4a !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 28px; font-weight: 300; color: #1a1a1a !important; line-height: 1.5 !important; margin: 60px 0 50px; padding-bottom: 30px; border-bottom: 1px solid #d0d0d0; letter-spacing: 0.2em; text-transform: uppercase;',
       h2: 'font-size: 20px; font-weight: 400; color: #2a2a2a !important; line-height: 1.6 !important; margin: 70px 0 40px; padding: 20px 0; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; letter-spacing: 0.15em; background-color: #fafafa !important;',
       h3: 'font-size: 17px; font-weight: 400; color: #3a3a3a !important; line-height: 1.7 !important; margin: 50px 0 30px; letter-spacing: 0.1em;',
@@ -382,7 +382,7 @@ const STYLES = {
   'gaudi-organic': {
     name: '高迪·有机',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 60px 45px; font-family: "Baskerville", "Georgia", serif; font-size: 18px; line-height: 1.8 !important; color: #3d2914 !important; background-color: #fff5e6 !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 60px 24px; font-family: "Baskerville", "Georgia", serif; font-size: 18px; line-height: 1.8 !important; color: #3d2914 !important; background-color: #fff5e6 !important; word-wrap: break-word;',
       h1: 'font-size: 52px; font-weight: 700; color: #ff6b6b !important; background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #5b86e5, #a55eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2 !important; margin: 70px 0 35px; text-align: center; letter-spacing: -0.02em; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); position: relative; padding: 20px;',
       h2: 'font-size: 38px; font-weight: 600; color: #c0392b !important; line-height: 1.3 !important; margin: 60px 0 30px; text-align: center; position: relative; padding: 15px 30px; background: radial-gradient(ellipse at center, rgba(192, 57, 43, 0.08) 0%, transparent 70%); border-radius: 50% 20% / 10% 40%;',
       h3: 'font-size: 28px; font-weight: 600; color: #27ae60 !important; line-height: 1.4 !important; margin: 50px 0 25px; padding-left: 35px; position: relative; border-left: 5px wavy #27ae60;',
@@ -412,7 +412,7 @@ const STYLES = {
   'guardian': {
     name: 'Guardian 卫报',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 40px 30px; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 40px 12px; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 42px; font-weight: 700; color: #052962 !important; line-height: 1.15 !important; margin: 40px 0 20px; padding-bottom: 12px; border-bottom: 3px solid #052962;',
       h2: 'font-size: 32px; font-weight: 600; color: #052962 !important; line-height: 1.25 !important; margin: 35px 0 18px; padding-left: 16px; border-left: 5px solid #C70000; background-color: #f6f6f6 !important; padding: 12px 16px;',
       h3: 'font-size: 24px; font-weight: 600; color: #052962 !important; line-height: 1.3 !important; margin: 30px 0 15px; padding: 8px 12px; background-color: #FEC200 !important; display: inline-block;',
@@ -441,7 +441,7 @@ const STYLES = {
   'nikkei': {
     name: 'Nikkei 日経',
     styles: {
-      container: 'max-width: 650px; margin: 0 auto; padding: 20px 25px; font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; font-size: 15px; line-height: 1.6 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 650px; margin: 0 auto; padding: 20px 12px; font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; font-size: 15px; line-height: 1.6 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 24px; font-weight: 700; color: #000 !important; line-height: 1.3 !important; margin: 25px 0 15px; padding-bottom: 8px; border-bottom: 2px solid #000;',
       h2: 'font-size: 18px; font-weight: 700; color: #c41230 !important; line-height: 1.4 !important; margin: 20px 0 12px; padding-left: 10px; border-left: 3px solid #c41230;',
       h3: 'font-size: 16px; font-weight: 600; color: #000 !important; line-height: 1.4 !important; margin: 18px 0 10px; padding: 4px 8px; background-color: #f5f5f5 !important;',
@@ -470,7 +470,7 @@ const STYLES = {
   'lemonde': {
     name: 'Le Monde 世界报',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 60px 40px; font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.8 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 60px 20px; font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.8 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
       h1: 'font-size: 48px; font-weight: 400; color: #1a1a1a !important; line-height: 1.2 !important; margin: 60px 0 30px; text-align: center; letter-spacing: -0.02em; font-family: "Didot", Georgia, serif; text-transform: uppercase;',
       h2: 'font-size: 36px; font-weight: 300; color: #2c2c2c !important; line-height: 1.3 !important; margin: 50px 0 25px; text-align: center; padding: 20px 0; border-top: 1px solid #2c2c2c; border-bottom: 1px solid #2c2c2c; font-style: italic;',
       h3: 'font-size: 28px; font-weight: 400; color: #2c2c2c !important; line-height: 1.4 !important; margin: 40px 0 20px; padding-left: 20px; position: relative; font-style: italic;',
@@ -500,7 +500,7 @@ const STYLES = {
   'latepost-depth': {
     name: 'LatePost 深度',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 40px 35px; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 17px; line-height: 1.8 !important; color: #1a1a1a !important; background-color: #fafafa !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 40px 12px; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 17px; line-height: 1.8 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 32px; font-weight: 700; color: #1a1a1a !important; line-height: 1.3 !important; margin: 48px 0 28px; padding-left: 20px; border-left: 6px solid #d32f2f; position: relative;',
       h2: 'font-size: 24px; font-weight: 600; color: #fff !important; line-height: 1.4 !important; margin: 40px 0 24px; padding: 16px 24px; background-color: #d32f2f !important; border-radius: 4px; position: relative;',
       h3: 'font-size: 20px; font-weight: 600; color: #d32f2f !important; line-height: 1.5 !important; margin: 35px 0 20px; padding-left: 16px; border-left: 4px solid #d32f2f; position: relative;',
