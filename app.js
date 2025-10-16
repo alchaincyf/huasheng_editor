@@ -1583,7 +1583,20 @@ const markdown = \`![图片](img://\${imageId})\`;
         console.log('是否有 turndownService:', !!this.turndownService);
       }
 
-      // 优先检查 HTML 数据（如果有 HTML，说明来自富文本编辑器，应该转换）
+      // 检查是否来自 IDE/代码编辑器的 HTML（需要特殊处理）
+      const isFromIDE = this.isIDEFormattedHTML(htmlData, textData);
+
+      if (DEBUG) {
+        console.log('是否来自 IDE:', isFromIDE);
+      }
+
+      if (isFromIDE && textData && this.isMarkdown(textData)) {
+        // 来自 IDE 的 Markdown 代码，直接使用纯文本（避免转义）
+        if (DEBUG) console.log('检测到 IDE 复制的 Markdown 代码，使用纯文本');
+        return; // 使用默认粘贴行为
+      }
+
+      // 处理 HTML 数据（富文本编辑器或其他来源）
       if (htmlData && htmlData.trim() !== '' && this.turndownService) {
         // 检查是否是从代码编辑器复制的（精确匹配真正的代码块标签，避免误判）
         // 只有当 HTML 主要由 <pre> 或 <code> 组成时才跳过转换
@@ -1680,6 +1693,49 @@ const markdown = \`![图片](img://\${imageId})\`;
       // 如果有 2 个或以上的 Markdown 特征，认为是 Markdown
       // 或者如果包含我们的图片注释，也认为是 Markdown
       return matchCount >= 2 || text.includes('<!-- img:');
+    },
+
+    // 检测 HTML 是否来自 IDE/代码编辑器
+    isIDEFormattedHTML(htmlData, textData) {
+      if (!htmlData || !textData) return false;
+
+      // IDE 复制的 HTML 特征（VS Code、Cursor、Sublime Text 等）
+      const ideSignatures = [
+        // VS Code 特征
+        /<meta\s+charset=['"]utf-8['"]/i,
+        /<div\s+class=["']ace_line["']/,
+        /style=["'][^"']*font-family:\s*['"]?(?:Consolas|Monaco|Menlo|Courier)/i,
+
+        // 简单的 div/span 结构（没有富文本语义标签）
+        // 检查：有 HTML 标签，但几乎没有 <p>, <h1-h6>, <strong>, <em> 等富文本标签
+        function(html) {
+          const hasDivSpan = /<(?:div|span)[\s>]/.test(html);
+          const hasSemanticTags = /<(?:p|h[1-6]|strong|em|ul|ol|li|blockquote)[\s>]/i.test(html);
+          // 如果有 div/span 但几乎没有语义标签，可能是代码编辑器
+          return hasDivSpan && !hasSemanticTags;
+        },
+
+        // 检查 HTML 是否只是简单包裹纯文本（几乎没有格式化）
+        function(html) {
+          // 去除所有 HTML 标签，看是否与纯文本几乎一致
+          const strippedHtml = html.replace(/<[^>]+>/g, '').trim();
+          const similarity = strippedHtml === textData.trim();
+          return similarity;
+        }
+      ];
+
+      // 检查是否匹配任何 IDE 特征
+      let matchCount = 0;
+      for (const signature of ideSignatures) {
+        if (typeof signature === 'function') {
+          if (signature(htmlData)) matchCount++;
+        } else if (signature.test(htmlData)) {
+          matchCount++;
+        }
+      }
+
+      // 如果匹配 2 个或以上特征，认为是 IDE 格式
+      return matchCount >= 2;
     },
 
     // 在光标位置插入文本
