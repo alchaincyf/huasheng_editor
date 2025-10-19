@@ -162,7 +162,7 @@ const STYLES = {
       ul: 'margin: 24px 0; padding-left: 32px;',
       ol: 'margin: 24px 0; padding-left: 32px;',
       li: 'margin: 12px 0; line-height: 1.75 !important; color: #33302e !important;',
-      blockquote: 'margin: 32px 0; padding: 24px 28px; background-color: #990f3d !important; color: #fff !important; font-size: 19px; line-height: 1.7 !important; font-style: italic; font-family: Georgia, serif; border-left: 6px solid #fff1e5;',
+      blockquote: 'margin: 32px 0; padding: 24px 28px; background-color: #990f3d !important; color: #ffffff !important; font-size: 19px; line-height: 1.7 !important; font-style: italic; font-family: Georgia, serif; border-left: 6px solid #fff1e5; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);',
       code: 'font-family: "Courier New", Courier, monospace; font-size: 15px; padding: 3px 8px; background-color: #fff !important; color: #990f3d !important; border: 1px solid #cec6b9; font-weight: 600;',
       pre: 'margin: 28px 0; padding: 24px; background-color: #fff !important; border-left: 4px solid #990f3d; overflow-x: auto; line-height: 1.6 !important;',
       hr: 'margin: 48px auto; border: none; height: 2px; background-color: #990f3d !important; max-width: 80px;',

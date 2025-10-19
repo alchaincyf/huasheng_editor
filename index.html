@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>公众号 Markdown 编辑器</title>
+  <title>公众号排版器</title>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-5FTJSWC1Z5"></script>
@@ -100,6 +100,23 @@
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .creator-info {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--color-tertiary);
+      margin-left: 12px;
+    }
+
+    .creator-info a {
+      color: var(--color-accent);
+      text-decoration: none;
+      transition: opacity 120ms;
+    }
+
+    .creator-info a:hover {
+      opacity: 0.7;
     }
 
     .github-link {
@@ -879,7 +896,8 @@
           <path d="M6 10 L6 22 L9 22 L9 15 L13 20 L17 15 L17 22 L20 22 L20 10 L16 10 L13 14 L10 10 Z" fill="white"/>
           <rect x="6" y="24" width="20" height="2" rx="1" fill="white" opacity="0.7"/>
         </svg>
-        <span>公众号 Markdown 编辑器</span>
+        <span>公众号排版器</span>
+        <span class="creator-info">Created by <a href="https://huasheng.ai" target="_blank" rel="noopener noreferrer">花生</a></span>
       </div>
       <a href="https://github.com/alchaincyf/huasheng_editor"
          target="_blank"

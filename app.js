@@ -541,7 +541,7 @@ const editorApp = createApp({
     const md = window.markdownit({
       html: true,
       linkify: true,
-      typographer: true,
+      typographer: false,  // 禁用 typographer 以避免智能引号干扰加粗标记
       highlight: function (str, lang) {
         // macOS 风格的窗口装饰
         const dots = '<div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #2a2c33; border-bottom: 1px solid #1e1f24;"><span style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f56;"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #27c93f;"></span></div>';
@@ -768,6 +768,7 @@ const markdown = \`![图片](img://\${imageId})\`;
       content = content.replace(/^(\s*(?:\d+\.|-|\*)\s+.+?:)\s*\n\s+(.+?)$/gm, '$1 $2');
       content = content.replace(/^(\s*(?:\d+\.|-|\*)\s+[^:\n]+)\n:\s*(.+?)$/gm, '$1: $2');
       content = content.replace(/^(\s*(?:\d+\.|-|\*)\s+.+?)\n\n\s+(.+?)$/gm, '$1 $2');
+
       return content;
     },
 
