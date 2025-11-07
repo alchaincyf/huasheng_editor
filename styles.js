@@ -91,8 +91,8 @@ const STYLES = {
     name: 'Claude',
     styles: {
       container: 'max-width: 700px; margin: 0 auto; padding: 56px 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.7 !important; color: #2b2b2b !important; background-color: #faf9f7 !important; word-wrap: break-word; letter-spacing: -0.01em;',
-      h1: 'font-size: 48px; font-weight: 600; color: #191919 !important; line-height: 1.15 !important; margin: 64px 0 32px; letter-spacing: -0.025em; background: linear-gradient(135deg, #C15F3C 0%, #e97d5b 50%, #CC8B7A 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent !important;',
-      h2: 'font-size: 36px; font-weight: 600; color: #191919 !important; line-height: 1.25 !important; margin: 56px 0 28px; letter-spacing: -0.02em; background: linear-gradient(135deg, #C15F3C 0%, #9DC88D 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent !important;',
+      h1: 'font-size: 48px; font-weight: 600; color: #C15F3C !important; line-height: 1.15 !important; margin: 64px 0 32px; letter-spacing: -0.025em; background: linear-gradient(135deg, #C15F3C 0%, #e97d5b 50%, #CC8B7A 100%); -webkit-background-clip: text; background-clip: text;',
+      h2: 'font-size: 36px; font-weight: 600; color: #C15F3C !important; line-height: 1.25 !important; margin: 56px 0 28px; letter-spacing: -0.02em; background: linear-gradient(135deg, #C15F3C 0%, #9DC88D 100%); -webkit-background-clip: text; background-clip: text;',
       h3: 'font-size: 28px; font-weight: 600; color: #2b2b2b !important; line-height: 1.3 !important; margin: 48px 0 24px; letter-spacing: -0.015em;',
       h4: 'font-size: 24px; font-weight: 600; color: #3a3a3a !important; line-height: 1.4 !important; margin: 40px 0 20px; letter-spacing: -0.01em;',
       h5: 'font-size: 20px; font-weight: 600; color: #4a4a4a !important; line-height: 1.45 !important; margin: 32px 0 16px;',
@@ -412,7 +412,7 @@ const STYLES = {
     name: '高迪·有机',
     styles: {
       container: 'max-width: 700px; margin: 0 auto; padding: 60px 24px; font-family: "Baskerville", "Georgia", serif; font-size: 18px; line-height: 1.8 !important; color: #3d2914 !important; background-color: #fff5e6 !important; word-wrap: break-word;',
-      h1: 'font-size: 52px; font-weight: 700; color: #ff6b6b !important; background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #5b86e5, #a55eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2 !important; margin: 70px 0 35px; text-align: center; letter-spacing: -0.02em; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); position: relative; padding: 20px;',
+      h1: 'font-size: 52px; font-weight: 700; color: #ff6b6b !important; background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #5b86e5, #a55eea); -webkit-background-clip: text; background-clip: text; line-height: 1.2 !important; margin: 70px 0 35px; text-align: center; letter-spacing: -0.02em; position: relative; padding: 20px;',
       h2: 'font-size: 38px; font-weight: 600; color: #c0392b !important; line-height: 1.3 !important; margin: 60px 0 30px; text-align: center; position: relative; padding: 15px 30px; background: radial-gradient(ellipse at center, rgba(192, 57, 43, 0.08) 0%, transparent 70%); border-radius: 50% 20% / 10% 40%;',
       h3: 'font-size: 28px; font-weight: 600; color: #27ae60 !important; line-height: 1.4 !important; margin: 50px 0 25px; padding-left: 35px; position: relative; border-left: 5px wavy #27ae60;',
       h4: 'font-size: 22px; font-weight: 600; color: #2980b9 !important; line-height: 1.5 !important; margin: 40px 0 20px; padding: 10px 20px; background: linear-gradient(90deg, rgba(41, 128, 185, 0.1) 0%, transparent 50%); border-radius: 100px 0 100px 0;',
