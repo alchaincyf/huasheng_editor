@@ -488,6 +488,21 @@ const EMPHASIS_MARKERS = new Set([
   0x7E  // ~
 ]);
 
+function isCjkLetter(charCode) {
+  if (!charCode || charCode < 0) {
+    return false;
+  }
+
+  return (
+    (charCode >= 0x3400 && charCode <= 0x4DBF) ||  // CJK Unified Ideographs Extension A
+    (charCode >= 0x4E00 && charCode <= 0x9FFF) ||  // CJK Unified Ideographs
+    (charCode >= 0xF900 && charCode <= 0xFAFF) ||  // CJK Compatibility Ideographs
+    (charCode >= 0xFF01 && charCode <= 0xFF60) ||  // Full-width ASCII variants
+    (charCode >= 0xFF61 && charCode <= 0xFF9F) ||  // Half-width Katakana
+    (charCode >= 0xFFA0 && charCode <= 0xFFDC)     // Full-width Latin letters
+  );
+}
+
 const editorApp = createApp({
   data() {
     return {
@@ -1483,7 +1498,10 @@ const markdown = \`![图片](img://\${imageId})\`;
         const count = pos - start;
         const nextChar = pos < max ? this.src.charCodeAt(pos) : 0x20;
 
-        const isLastPunctChar =
+        const isLastWhiteSpace = utils.isWhiteSpace(lastChar);
+        const isNextWhiteSpace = utils.isWhiteSpace(nextChar);
+
+        let isLastPunctChar =
           utils.isMdAsciiPunct(lastChar) || utils.isPunctChar(String.fromCharCode(lastChar));
 
         let isNextPunctChar =
@@ -1493,8 +1511,14 @@ const markdown = \`![图片](img://\${imageId})\`;
           isNextPunctChar = false;
         }
 
-        const isLastWhiteSpace = utils.isWhiteSpace(lastChar);
-        const isNextWhiteSpace = utils.isWhiteSpace(nextChar);
+        if (marker === 0x5F /* _ */) {
+          if (!isLastWhiteSpace && !isLastPunctChar && isCjkLetter(lastChar)) {
+            isLastPunctChar = true;
+          }
+          if (!isNextWhiteSpace && !isNextPunctChar && isCjkLetter(nextChar)) {
+            isNextPunctChar = true;
+          }
+        }
 
         const left_flanking =
           !isNextWhiteSpace && (!isNextPunctChar || isLastWhiteSpace || isLastPunctChar);
