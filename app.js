@@ -482,6 +482,12 @@ class ImageHostManager {
 
 const { createApp } = Vue;
 
+const EMPHASIS_MARKERS = new Set([
+  0x2A, // *
+  0x5F, // _
+  0x7E  // ~
+]);
+
 const editorApp = createApp({
   data() {
     return {
@@ -1456,7 +1462,6 @@ const markdown = \`![图片](img://\${imageId})\`;
       const utils = md.utils;
       const StateInline = md.inline.State;
       const allowLeadingPunctuation = this.createSafeLeadingPunctuationChecker();
-      const patchedMarkers = new Set([0x2A /* * */, 0x5F /* _ */, 0x7E /* ~ */]);
 
       const originalScanDelims = StateInline.prototype.scanDelims;
 
@@ -1464,7 +1469,7 @@ const markdown = \`![图片](img://\${imageId})\`;
         const max = this.posMax;
         const marker = this.src.charCodeAt(start);
 
-        if (!patchedMarkers.has(marker)) {
+        if (!EMPHASIS_MARKERS.has(marker)) {
           return originalScanDelims.call(this, start, canSplitWord);
         }
 
@@ -1519,7 +1524,7 @@ const markdown = \`![图片](img://\${imageId})\`;
       }
 
       return (charCode, marker) => {
-        if (marker !== 0x5F && marker !== 0x2A) {
+        if (!EMPHASIS_MARKERS.has(marker)) {
           return false;
         }
 
