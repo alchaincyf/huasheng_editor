@@ -1456,6 +1456,7 @@ const markdown = \`![图片](img://\${imageId})\`;
       const utils = md.utils;
       const StateInline = md.inline.State;
       const allowLeadingPunctuation = this.createSafeLeadingPunctuationChecker();
+      const patchedMarkers = new Set([0x2A /* * */, 0x5F /* _ */, 0x7E /* ~ */]);
 
       const originalScanDelims = StateInline.prototype.scanDelims;
 
@@ -1463,7 +1464,7 @@ const markdown = \`![图片](img://\${imageId})\`;
         const max = this.posMax;
         const marker = this.src.charCodeAt(start);
 
-        if (marker !== 0x5F /* _ */ && marker !== 0x2A /* * */) {
+        if (!patchedMarkers.has(marker)) {
           return originalScanDelims.call(this, start, canSplitWord);
         }
 
