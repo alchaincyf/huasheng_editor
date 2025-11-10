@@ -496,6 +496,7 @@ const editorApp = createApp({
         type: 'success'
       },
       md: null,
+      scanDelimsPatched: false,
       STYLES: STYLES,  // 将样式对象暴露给模板
       turndownService: null,  // Turndown 服务实例
       isDraggingOver: false,  // 拖拽状态
@@ -566,6 +567,7 @@ const editorApp = createApp({
       }
     });
 
+    this.patchMarkdownScanner(md);
     this.md = md;
 
     // 手动触发一次渲染（确保初始内容显示）
@@ -1444,6 +1446,91 @@ const markdown = \`![图片](img://\${imageId})\`;
       setTimeout(() => {
         this.toast.show = false;
       }, 3000);
+    },
+
+    patchMarkdownScanner(md) {
+      if (!md || !md.inline || !md.inline.State || this.scanDelimsPatched) {
+        return;
+      }
+
+      const utils = md.utils;
+      const StateInline = md.inline.State;
+      const allowLeadingPunctuation = this.createSafeLeadingPunctuationChecker();
+
+      const originalScanDelims = StateInline.prototype.scanDelims;
+
+      StateInline.prototype.scanDelims = function (start, canSplitWord) {
+        const max = this.posMax;
+        const marker = this.src.charCodeAt(start);
+
+        if (marker !== 0x5F /* _ */ && marker !== 0x2A /* * */) {
+          return originalScanDelims.call(this, start, canSplitWord);
+        }
+
+        const lastChar = start > 0 ? this.src.charCodeAt(start - 1) : 0x20;
+
+        let pos = start;
+        while (pos < max && this.src.charCodeAt(pos) === marker) {
+          pos++;
+        }
+
+        const count = pos - start;
+        const nextChar = pos < max ? this.src.charCodeAt(pos) : 0x20;
+
+        const isLastPunctChar =
+          utils.isMdAsciiPunct(lastChar) || utils.isPunctChar(String.fromCharCode(lastChar));
+
+        let isNextPunctChar =
+          utils.isMdAsciiPunct(nextChar) || utils.isPunctChar(String.fromCharCode(nextChar));
+
+        if (isNextPunctChar && allowLeadingPunctuation(nextChar, marker)) {
+          isNextPunctChar = false;
+        }
+
+        const isLastWhiteSpace = utils.isWhiteSpace(lastChar);
+        const isNextWhiteSpace = utils.isWhiteSpace(nextChar);
+
+        const left_flanking =
+          !isNextWhiteSpace && (!isNextPunctChar || isLastWhiteSpace || isLastPunctChar);
+        const right_flanking =
+          !isLastWhiteSpace && (!isLastPunctChar || isNextWhiteSpace || isNextPunctChar);
+
+        const can_open = left_flanking && (canSplitWord || !right_flanking || isLastPunctChar);
+        const can_close = right_flanking && (canSplitWord || !left_flanking || isNextPunctChar);
+
+        return { can_open, can_close, length: count };
+      };
+
+      this.scanDelimsPatched = true;
+    },
+
+    createSafeLeadingPunctuationChecker() {
+      const fallbackChars = '「『《〈（【〔〖［｛﹁﹃﹙﹛﹝“‘（';
+      const fallbackSet = new Set(
+        fallbackChars.split('').map(char => char.codePointAt(0))
+      );
+
+      let unicodeRegex = null;
+      try {
+        unicodeRegex = new RegExp('[\\p{Ps}\\p{Pi}]', 'u');
+      } catch (_error) {
+        unicodeRegex = null;
+      }
+
+      return (charCode, marker) => {
+        if (marker !== 0x5F && marker !== 0x2A) {
+          return false;
+        }
+
+        if (unicodeRegex) {
+          const char = String.fromCharCode(charCode);
+          if (unicodeRegex.test(char)) {
+            return true;
+          }
+        }
+
+        return fallbackSet.has(charCode);
+      };
     },
 
     // 初始化 Turndown 服务
