@@ -3,7 +3,7 @@ const STYLES = {
   'wechat-default': {
     name: '默认公众号风格',
     styles: {
-      container: 'max-width: 740px; margin: 0 auto; padding: 20px 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.8 !important; color: #3f3f3f !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 740px; margin: 0 auto; padding: 10px 12px 20px 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.8 !important; color: #3f3f3f !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 24px; font-weight: 600; color: #2c3e50 !important; line-height: 1.4 !important; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #3498db;',
       h2: 'font-size: 22px; font-weight: 600; color: #2c3e50 !important; line-height: 1.4 !important; margin: 28px 0 14px; padding-left: 12px; border-left: 4px solid #3498db;',
       h3: 'font-size: 20px; font-weight: 600; color: #34495e !important; line-height: 1.4 !important; margin: 24px 0 12px;',
@@ -17,7 +17,7 @@ const STYLES = {
       ul: 'margin: 16px 0; padding-left: 24px;',
       ol: 'margin: 16px 0; padding-left: 24px;',
       li: 'margin: 8px 0; line-height: 1.8 !important;',
-      blockquote: 'margin: 16px 0; padding: 10px 16px; background-color: #fafafa !important; border-left: 3px solid #999; color: #666 !important; line-height: 1.6 !important;',
+      blockquote: 'margin: 16px 0; padding: 8px 16px; background-color: #fafafa !important; border-left: 3px solid #999; color: #666 !important; line-height: 1.5 !important;',
       code: 'font-family: Consolas, Monaco, "Courier New", monospace; font-size: 14px; padding: 2px 6px; background-color: #f5f5f5 !important; color: #e74c3c !important; border-radius: 3px;',
       pre: 'margin: 20px 0; padding: 16px; background-color: #2d2d2d !important; border-radius: 8px; overflow-x: auto; line-height: 1.6 !important;',
       hr: 'margin: 32px 0; border: none; border-top: 1px solid #e0e0e0;',
@@ -32,7 +32,7 @@ const STYLES = {
   'latepost-depth': {
     name: '晚点风格',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 40px 12px; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 17px; line-height: 1.8 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 16px 12px 40px 12px; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 17px; line-height: 1.8 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 32px; font-weight: 700; color: #1a1a1a !important; line-height: 1.3 !important; margin: 48px 0 28px; padding-left: 20px; border-left: 6px solid #d32f2f; position: relative;',
       h2: 'font-size: 24px; font-weight: 600; color: #fff !important; line-height: 1.4 !important; margin: 40px 0 24px; padding: 16px 24px; background-color: #d32f2f !important; border-radius: 4px; position: relative;',
       h3: 'font-size: 20px; font-weight: 600; color: #d32f2f !important; line-height: 1.5 !important; margin: 35px 0 20px; padding-left: 16px; border-left: 4px solid #d32f2f; position: relative;',
@@ -46,7 +46,7 @@ const STYLES = {
       ul: 'margin: 24px 0; padding-left: 28px; list-style-type: disc;',
       ol: 'margin: 24px 0; padding-left: 28px; list-style-type: decimal;',
       li: 'margin: 12px 0; line-height: 1.8 !important; color: #1a1a1a !important;',
-      blockquote: 'margin: 32px 0; padding: 20px 24px 20px 20px; background-color: #f5f5f5 !important; border-left: 4px solid #d32f2f; color: #1a1a1a !important; font-size: 16px; line-height: 1.8 !important; position: relative; border-radius: 4px;',
+      blockquote: 'margin: 24px 0; padding: 14px 20px; background-color: #f5f5f5 !important; border-left: 4px solid #d32f2f; color: #1a1a1a !important; font-size: 16px; line-height: 1.6 !important; position: relative; border-radius: 4px;',
       code: 'font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 15px; padding: 3px 8px; background-color: #f5f5f5 !important; color: #d32f2f !important; border-radius: 4px; font-weight: 500;',
       pre: 'margin: 28px 0; padding: 20px; background-color: #2a2a2a !important; color: #f5f5f5 !important; border-radius: 6px; overflow-x: auto; line-height: 1.6 !important; border-left: 4px solid #d32f2f;',
       hr: 'margin: 40px auto; border: none; height: 2px; background: linear-gradient(to right, transparent, #d32f2f, transparent); max-width: 200px;',
@@ -61,7 +61,7 @@ const STYLES = {
   'wechat-ft': {
     name: '金融时报',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 40px 20px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 17px; line-height: 1.75 !important; color: #33302e !important; background-color: #fff1e5 !important; word-wrap: break-word;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 16px 20px 40px 20px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 17px; line-height: 1.75 !important; color: #33302e !important; background-color: #fff1e5 !important; word-wrap: break-word;',
       h1: 'font-size: 38px; font-weight: 600; color: #000 !important; line-height: 1.2 !important; margin: 56px 0 24px; font-family: Georgia, serif; letter-spacing: -0.01em; border-bottom: 4px solid #990f3d; padding-bottom: 16px;',
       h2: 'font-size: 30px; font-weight: 600; color: #990f3d !important; line-height: 1.3 !important; margin: 48px 0 20px; font-family: Georgia, serif; border-left: 6px solid #990f3d; padding-left: 20px;',
       h3: 'font-size: 24px; font-weight: 600; color: #33302e !important; line-height: 1.4 !important; margin: 40px 0 16px; font-family: Georgia, serif; border-bottom: 2px solid #cec6b9; padding-bottom: 8px;',
@@ -75,7 +75,7 @@ const STYLES = {
       ul: 'margin: 24px 0; padding-left: 32px;',
       ol: 'margin: 24px 0; padding-left: 32px;',
       li: 'margin: 12px 0; line-height: 1.75 !important; color: #33302e !important;',
-      blockquote: 'margin: 32px 0; padding: 24px 28px; background-color: #990f3d !important; color: #ffffff !important; font-size: 19px; line-height: 1.7 !important; font-style: italic; font-family: Georgia, serif; border-left: 6px solid #fff1e5; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);',
+      blockquote: 'margin: 24px 0; padding: 14px 20px; background-color: #fff1e5 !important; color: #990f3d !important; font-size: 17px; line-height: 1.6 !important; font-style: italic; font-family: Georgia, serif; border-left: 6px solid #990f3d; box-shadow: 0 2px 8px rgba(153, 15, 61, 0.1);',
       code: 'font-family: "Courier New", Courier, monospace; font-size: 15px; padding: 3px 8px; background-color: #fff !important; color: #990f3d !important; border: 1px solid #cec6b9; font-weight: 600;',
       pre: 'margin: 28px 0; padding: 24px; background-color: #fff !important; border-left: 4px solid #990f3d; overflow-x: auto; line-height: 1.6 !important;',
       hr: 'margin: 48px auto; border: none; height: 2px; background-color: #990f3d !important; max-width: 80px;',
@@ -90,7 +90,7 @@ const STYLES = {
   'wechat-anthropic': {
     name: 'Claude',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 56px 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.7 !important; color: #2b2b2b !important; background-color: #faf9f7 !important; word-wrap: break-word; letter-spacing: -0.01em;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 20px 24px 56px 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.7 !important; color: #2b2b2b !important; background-color: #faf9f7 !important; word-wrap: break-word; letter-spacing: -0.01em;',
       h1: 'font-size: 48px; font-weight: 600; color: #C15F3C !important; line-height: 1.15 !important; margin: 64px 0 32px; letter-spacing: -0.025em; background: linear-gradient(135deg, #C15F3C 0%, #e97d5b 50%, #CC8B7A 100%); -webkit-background-clip: text; background-clip: text;',
       h2: 'font-size: 36px; font-weight: 600; color: #C15F3C !important; line-height: 1.25 !important; margin: 56px 0 28px; letter-spacing: -0.02em; background: linear-gradient(135deg, #C15F3C 0%, #9DC88D 100%); -webkit-background-clip: text; background-clip: text;',
       h3: 'font-size: 28px; font-weight: 600; color: #2b2b2b !important; line-height: 1.3 !important; margin: 48px 0 24px; letter-spacing: -0.015em;',
@@ -104,7 +104,7 @@ const STYLES = {
       ul: 'margin: 32px 0; padding-left: 32px;',
       ol: 'margin: 32px 0; padding-left: 32px;',
       li: 'margin: 16px 0; line-height: 1.75 !important; color: #2b2b2b !important; font-size: 18px;',
-      blockquote: 'margin: 48px 0; padding: 24px 32px; background: linear-gradient(135deg, rgba(193, 95, 60, 0.06) 0%, rgba(157, 200, 141, 0.06) 100%); border-left: 4px solid #C15F3C; color: #2b2b2b !important; font-size: 20px; line-height: 1.65 !important; font-style: italic; border-radius: 8px;',
+      blockquote: 'margin: 32px 0; padding: 16px 24px; background: linear-gradient(135deg, rgba(193, 95, 60, 0.06) 0%, rgba(157, 200, 141, 0.06) 100%); border-left: 4px solid #C15F3C; color: #2b2b2b !important; font-size: 18px; line-height: 1.55 !important; font-style: italic; border-radius: 8px;',
       code: 'font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 16px; padding: 3px 8px; background-color: rgba(193, 95, 60, 0.08) !important; color: #C15F3C !important; border-radius: 8px; font-weight: 500; border: 1px solid rgba(193, 95, 60, 0.15);',
       pre: 'margin: 40px 0; padding: 28px; background: linear-gradient(135deg, #2b2b2b 0%, #3a3a3a 100%); color: #f5f5f5 !important; border-radius: 12px; overflow-x: auto; line-height: 1.6 !important; box-shadow: 0 4px 20px rgba(193, 95, 60, 0.15);',
       hr: 'margin: 64px auto; border: none; height: 2px; background: linear-gradient(to right, transparent, rgba(193, 95, 60, 0.3), rgba(157, 200, 141, 0.3), transparent); max-width: 240px;',
@@ -119,7 +119,7 @@ const STYLES = {
   'wechat-tech': {
     name: '技术风格',
     styles: {
-      container: 'max-width: 740px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.75 !important; color: #2c3e50 !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 740px; margin: 0 auto; padding: 10px 20px 20px 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.75 !important; color: #2c3e50 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 26px; font-weight: 700; color: #1a1a1a !important; line-height: 1.3 !important; margin: 36px 0 18px; padding: 0 0 12px; border-bottom: 3px solid #0066cc;',
       h2: 'font-size: 22px; font-weight: 700; color: #1a1a1a !important; line-height: 1.3 !important; margin: 32px 0 16px; padding-left: 16px; padding-top: 4px; padding-bottom: 4px; border-left: 5px solid #00a67d; background: linear-gradient(to right, #f0f9ff 0%, transparent 100%);',
       h3: 'font-size: 20px; font-weight: 600; color: #2c3e50 !important; line-height: 1.4 !important; margin: 28px 0 14px; padding-left: 12px; border-left: 3px solid #ff9800;',
@@ -133,7 +133,7 @@ const STYLES = {
       ul: 'margin: 18px 0; padding-left: 28px;',
       ol: 'margin: 18px 0; padding-left: 28px;',
       li: 'margin: 10px 0; line-height: 1.8 !important; color: #3a3a3a !important;',
-      blockquote: 'margin: 16px 0; padding: 10px 16px; background-color: #f5f9fc !important; border-left: 3px solid #2196f3; color: #555 !important; line-height: 1.6 !important;',
+      blockquote: 'margin: 16px 0; padding: 8px 16px; background-color: #f5f9fc !important; border-left: 3px solid #2196f3; color: #555 !important; line-height: 1.5 !important;',
       code: 'font-family: "Fira Code", Consolas, Monaco, "Courier New", monospace; font-size: 14px; padding: 3px 6px; background-color: #ffe6e6 !important; color: #d63031 !important; border-radius: 8px; font-weight: 500;',
       pre: 'margin: 24px 0; padding: 20px; background-color: #1e1e1e !important; border-radius: 8px; overflow-x: auto; line-height: 1.6 !important; box-shadow: 0 2px 8px rgba(0,0,0,0.1);',
       hr: 'margin: 36px 0; border: none; height: 2px; background: linear-gradient(to right, transparent, #0066cc, transparent);',
@@ -148,7 +148,7 @@ const STYLES = {
   'wechat-elegant': {
     name: '优雅简约',
     styles: {
-      container: 'max-width: 720px; margin: 0 auto; padding: 30px 20px; font-family: "Songti SC", "SimSun", Georgia, serif; font-size: 17px; line-height: 2 !important; color: #333 !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 720px; margin: 0 auto; padding: 12px 20px 30px 20px; font-family: "Songti SC", "SimSun", Georgia, serif; font-size: 17px; line-height: 2 !important; color: #333 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 28px; font-weight: 400; color: #1a1a1a !important; line-height: 1.5 !important; margin: 48px 0 24px; text-align: center; letter-spacing: 2px;',
       h2: 'font-size: 24px; font-weight: 400; color: #2c2c2c !important; line-height: 1.5 !important; margin: 40px 0 20px; text-align: center; letter-spacing: 1px;',
       h3: 'font-size: 20px; font-weight: 400; color: #3a3a3a !important; line-height: 1.6 !important; margin: 32px 0 16px; letter-spacing: 0.5px;',
@@ -162,7 +162,7 @@ const STYLES = {
       ul: 'margin: 20px 0; padding-left: 32px;',
       ol: 'margin: 20px 0; padding-left: 32px;',
       li: 'margin: 12px 0; line-height: 2 !important;',
-      blockquote: 'margin: 20px auto; padding: 12px 24px; background-color: transparent !important; border-left: 2px solid #ccc; color: #666 !important; max-width: 600px; line-height: 1.8 !important;',
+      blockquote: 'margin: 20px auto; padding: 10px 20px; background-color: transparent !important; border-left: 2px solid #ccc; color: #666 !important; max-width: 600px; line-height: 1.6 !important;',
       code: 'font-family: Menlo, Monaco, "Courier New", monospace; font-size: 14px; padding: 2px 6px; background-color: #f5f5f5 !important; color: #8b4513 !important; border-radius: 3px;',
       pre: 'margin: 28px 0; padding: 20px; background-color: #f9f9f9 !important; border: 1px solid #e5e5e5; border-radius: 8px; overflow-x: auto; line-height: 1.8 !important;',
       hr: 'margin: 48px auto; border: none; text-align: center; height: 1px; background-color: #e0e0e0 !important; max-width: 200px;',
@@ -177,7 +177,7 @@ const STYLES = {
   'wechat-deepread': {
     name: '深度阅读',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 32px 12px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.75 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: 0.01em;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 14px 12px 32px 12px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 18px; line-height: 1.75 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: 0.01em;',
       h1: 'font-size: 32px; font-weight: 700; color: #0a0a0a !important; line-height: 1.2 !important; margin: 48px 0 24px; letter-spacing: -0.02em;',
       h2: 'font-size: 28px; font-weight: 700; color: #0a0a0a !important; line-height: 1.3 !important; margin: 40px 0 20px; letter-spacing: -0.01em;',
       h3: 'font-size: 22px; font-weight: 600; color: #1a1a1a !important; line-height: 1.4 !important; margin: 32px 0 16px;',
@@ -191,7 +191,7 @@ const STYLES = {
       ul: 'margin: 24px 0; padding-left: 32px;',
       ol: 'margin: 24px 0; padding-left: 32px;',
       li: 'margin: 12px 0; line-height: 1.8 !important; color: #1a1a1a !important;',
-      blockquote: 'margin: 32px 0; padding: 20px 24px; background-color: #f8f9fa !important; border-left: 4px solid #0a0a0a; color: #1a1a1a !important; font-size: 17px; line-height: 1.7 !important; font-style: normal;',
+      blockquote: 'margin: 24px 0; padding: 14px 20px; background-color: #f8f9fa !important; border-left: 4px solid #0a0a0a; color: #1a1a1a !important; font-size: 16px; line-height: 1.6 !important; font-style: normal;',
       code: 'font-family: "SF Mono", Consolas, Monaco, "Courier New", monospace; font-size: 16px; padding: 2px 6px; background-color: #f5f5f5 !important; color: #d73a49 !important; border-radius: 3px;',
       pre: 'margin: 32px 0; padding: 24px; background-color: #f6f8fa !important; border-radius: 8px; overflow-x: auto; line-height: 1.6 !important; border: 1px solid #e1e4e8;',
       hr: 'margin: 48px 0; border: none; height: 1px; background-color: #e1e4e8 !important;',
@@ -206,7 +206,7 @@ const STYLES = {
 'wechat-nyt': {
     name: '纽约时报',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 48px 12px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 18px; line-height: 1.8 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 20px 12px 48px 12px; font-family: Georgia, "Times New Roman", Times, serif; font-size: 18px; line-height: 1.8 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 42px; font-weight: 700; color: #000 !important; line-height: 1.2 !important; margin: 56px 0 16px; font-family: Georgia, serif; letter-spacing: -0.02em; border-bottom: 1px solid #000; padding-bottom: 16px;',
       h2: 'font-size: 32px; font-weight: 700; color: #000 !important; line-height: 1.3 !important; margin: 48px 0 16px; font-family: Georgia, serif; letter-spacing: -0.01em;',
       h3: 'font-size: 24px; font-weight: 700; color: #121212 !important; line-height: 1.4 !important; margin: 40px 0 16px; font-family: Georgia, serif;',
@@ -220,7 +220,7 @@ const STYLES = {
       ul: 'margin: 24px 0; padding-left: 40px;',
       ol: 'margin: 24px 0; padding-left: 40px;',
       li: 'margin: 12px 0; line-height: 1.8 !important; color: #121212 !important; text-align: left;',
-      blockquote: 'margin: 32px 0; padding: 20px 32px; background-color: #f7f7f7 !important; border-left: 5px solid #121212; color: #121212 !important; font-size: 20px; line-height: 1.7 !important; font-style: italic; font-family: Georgia, serif;',
+      blockquote: 'margin: 24px 0; padding: 14px 24px; background-color: #f7f7f7 !important; border-left: 5px solid #121212; color: #121212 !important; font-size: 18px; line-height: 1.6 !important; font-style: italic; font-family: Georgia, serif;',
       code: 'font-family: "Courier New", Courier, monospace; font-size: 16px; padding: 2px 6px; background-color: #f0f0f0 !important; color: #666 !important; border: 1px solid #ddd;',
       pre: 'margin: 28px 0; padding: 24px; background-color: #f7f7f7 !important; border: 1px solid #ddd; overflow-x: auto; line-height: 1.6 !important;',
       hr: 'margin: 48px auto; border: none; height: 1px; background-color: #ddd !important; max-width: 100px;',
@@ -235,7 +235,7 @@ const STYLES = {
   'wechat-jonyive': {
     name: 'Jony Ive',
     styles: {
-      container: 'max-width: 620px; margin: 0 auto; padding: 40px 24px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #6e6e73 !important; background-color: #fbfbfd !important; word-wrap: break-word;',
+      container: 'max-width: 620px; margin: 0 auto; padding: 16px 24px 40px 24px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #6e6e73 !important; background-color: #fbfbfd !important; word-wrap: break-word;',
       h1: 'font-size: 39px; font-weight: 200; color: #1d1d1f !important; line-height: 1.15 !important; margin: 48px 0 24px; letter-spacing: -0.025em;',
       h2: 'font-size: 28px; font-weight: 300; color: #1d1d1f !important; line-height: 1.2 !important; margin: 40px 0 20px; letter-spacing: -0.018em;',
       h3: 'font-size: 20px; font-weight: 400; color: #1d1d1f !important; line-height: 1.25 !important; margin: 32px 0 16px; letter-spacing: -0.008em;',
@@ -249,7 +249,7 @@ const STYLES = {
       ul: 'margin: 20px 0; padding-left: 28px; list-style-type: disc;',
       ol: 'margin: 20px 0; padding-left: 28px; list-style-type: decimal;',
       li: 'margin: 12px 0; line-height: 1.6 !important; color: #6e6e73 !important; padding-left: 24px; position: relative; font-weight: 300;',
-      blockquote: 'margin: 40px auto; padding: 0; background-color: transparent !important; border-left: none; color: #1d1d1f !important; font-size: 20px; line-height: 1.4 !important; font-weight: 300; text-align: center; max-width: 520px; font-style: normal;',
+      blockquote: 'margin: 32px auto; padding: 0; background-color: transparent !important; border-left: none; color: #1d1d1f !important; font-size: 18px; line-height: 1.4 !important; font-weight: 300; text-align: center; max-width: 520px; font-style: normal;',
       code: 'font-family: "SF Mono", Monaco, Menlo, monospace; font-size: 14px; padding: 2px 6px; background-color: #f5f5f7 !important; color: #6e6e73 !important; border-radius: 6px; font-weight: 400;',
       pre: 'margin: 28px 0; padding: 20px; background-color: #f5f5f7 !important; border-radius: 10px; overflow-x: auto; line-height: 1.5 !important;',
       hr: 'margin: 56px auto; border: none; height: 1px; background-color: #d2d2d7 !important; max-width: 48px;',
@@ -264,7 +264,7 @@ const STYLES = {
 'wechat-medium': {
     name: 'Medium 长文',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 48px 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 21px; line-height: 1.58 !important; color: #242424 !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: -0.003em;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 20px 12px 48px 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 21px; line-height: 1.58 !important; color: #242424 !important; background-color: #fff !important; word-wrap: break-word; letter-spacing: -0.003em;',
       h1: 'font-size: 42px; font-weight: 700; color: #242424 !important; line-height: 1.15 !important; margin: 56px 0 24px; letter-spacing: -0.022em; font-family: Georgia, "Times New Roman", serif;',
       h2: 'font-size: 34px; font-weight: 700; color: #242424 !important; line-height: 1.2 !important; margin: 48px 0 20px; letter-spacing: -0.019em; font-family: Georgia, "Times New Roman", serif;',
       h3: 'font-size: 28px; font-weight: 700; color: #242424 !important; line-height: 1.25 !important; margin: 40px 0 16px; letter-spacing: -0.014em; font-family: Georgia, "Times New Roman", serif;',
@@ -278,7 +278,7 @@ const STYLES = {
       ul: 'margin: 32px 0; padding-left: 40px;',
       ol: 'margin: 32px 0; padding-left: 40px;',
       li: 'margin: 16px 0; line-height: 1.58 !important; color: #242424 !important; font-size: 21px;',
-      blockquote: 'margin: 48px 0; padding: 0 32px; border-left: 3px solid #242424; color: #242424 !important; font-size: 24px; line-height: 1.48 !important; font-style: italic; font-family: Georgia, "Times New Roman", serif;',
+      blockquote: 'margin: 32px 0; padding: 0 24px; border-left: 3px solid #242424; color: #242424 !important; font-size: 20px; line-height: 1.5 !important; font-style: italic; font-family: Georgia, "Times New Roman", serif;',
       code: 'font-family: Menlo, Monaco, "Courier New", monospace; font-size: 18px; padding: 3px 6px; background-color: #f5f5f5 !important; color: #d73a49 !important; border-radius: 3px;',
       pre: 'margin: 40px 0; padding: 24px; background-color: #f7f7f7 !important; border-radius: 8px; overflow-x: auto; line-height: 1.5 !important;',
       hr: 'margin: 56px auto; border: none; text-align: center; height: 1px; background-color: #e6e6e6 !important; max-width: 400px;',
@@ -293,7 +293,7 @@ const STYLES = {
   'wechat-apple': {
     name: 'Apple 极简',
     styles: {
-      container: 'max-width: 640px; margin: 0 auto; padding: 48px 12px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #86868b !important; background-color: #fbfbfd !important; word-wrap: break-word;',
+      container: 'max-width: 640px; margin: 0 auto; padding: 20px 12px 48px 12px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #86868b !important; background-color: #fbfbfd !important; word-wrap: break-word;',
       h1: 'font-size: 48px; font-weight: 600; color: #1d1d1f !important; line-height: 1.1 !important; margin: 48px 0 24px; letter-spacing: -0.015em;',
       h2: 'font-size: 36px; font-weight: 600; color: #1d1d1f !important; line-height: 1.15 !important; margin: 40px 0 20px; letter-spacing: -0.012em;',
       h3: 'font-size: 28px; font-weight: 600; color: #1d1d1f !important; line-height: 1.2 !important; margin: 32px 0 16px; letter-spacing: -0.009em;',
@@ -307,7 +307,7 @@ const STYLES = {
       ul: 'margin: 24px 0; padding-left: 28px; list-style-type: disc;',
       ol: 'margin: 24px 0; padding-left: 28px; list-style-type: decimal;',
       li: 'margin: 16px 0; line-height: 1.6 !important; color: #86868b !important; padding-left: 28px; position: relative;',
-      blockquote: 'margin: 40px auto; padding: 0; background-color: transparent !important; border-left: none; color: #1d1d1f !important; font-size: 24px; line-height: 1.35 !important; font-weight: 600; text-align: center; max-width: 560px; font-style: normal;',
+      blockquote: 'margin: 32px auto; padding: 0; background-color: transparent !important; border-left: none; color: #1d1d1f !important; font-size: 20px; line-height: 1.4 !important; font-weight: 600; text-align: center; max-width: 560px; font-style: normal;',
       code: 'font-family: "SF Mono", Monaco, Menlo, monospace; font-size: 15px; padding: 2px 6px; background-color: #f5f5f7 !important; color: #86868b !important; border-radius: 8px;',
       pre: 'margin: 32px 0; padding: 24px; background-color: #f5f5f7 !important; border-radius: 12px; overflow-x: auto; line-height: 1.5 !important;',
       hr: 'margin: 48px auto; border: none; height: 1px; background-color: #d2d2d7 !important; max-width: 48px;',
@@ -323,7 +323,7 @@ const STYLES = {
   'kenya-emptiness': {
     name: '原研哉·空',
     styles: {
-      container: 'max-width: 640px; margin: 0 auto; padding: 80px 24px; font-family: "Hiragino Sans", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 2.5 !important; color: #333 !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 640px; margin: 0 auto; padding: 28px 24px 80px 24px; font-family: "Hiragino Sans", "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 2.5 !important; color: #333 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 24px; font-weight: 300; color: #000 !important; line-height: 2 !important; margin: 80px 0 60px; letter-spacing: 0.5em; text-align: center; padding: 0;',
       h2: 'font-size: 18px; font-weight: 300; color: #333 !important; line-height: 2 !important; margin: 70px 0 40px; letter-spacing: 0.3em; padding-left: 40px;',
       h3: 'font-size: 16px; font-weight: 400; color: #666 !important; line-height: 2 !important; margin: 60px 0 30px; letter-spacing: 0.2em;',
@@ -337,7 +337,7 @@ const STYLES = {
       ul: 'margin: 60px 0; padding-left: 32px; list-style-type: circle;',
       ol: 'margin: 60px 0; padding-left: 32px; list-style-type: decimal;',
       li: 'margin: 30px 0; line-height: 2.5 !important; color: #666 !important; padding-left: 40px; position: relative;',
-      blockquote: 'margin: 60px auto; padding: 0; background-color: transparent !important; border: none; color: #999 !important; font-size: 14px; line-height: 3 !important; text-align: center; max-width: 480px; letter-spacing: 0.2em;',
+      blockquote: 'margin: 40px auto; padding: 0; background-color: transparent !important; border: none; color: #999 !important; font-size: 14px; line-height: 2.2 !important; text-align: center; max-width: 480px; letter-spacing: 0.2em;',
       code: 'font-family: "SF Mono", Menlo, monospace; font-size: 13px; padding: 4px 8px; background-color: #f5f5f5 !important; color: #666 !important; border-radius: 2px;',
       pre: 'margin: 50px 0; padding: 40px; background-color: #f9f9f9 !important; border: none; border-radius: 0; overflow-x: auto; line-height: 2 !important;',
       hr: 'margin: 80px auto; border: none; width: 40px; height: 1px; background-color: #e0e0e0 !important;',
@@ -352,7 +352,7 @@ const STYLES = {
   'hische-editorial': {
     name: 'Hische·编辑部',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 70px 20px; font-family: "Crimson Text", Garamond, serif; font-size: 19px; line-height: 1.75 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 24px 20px 70px 20px; font-family: "Crimson Text", Garamond, serif; font-size: 19px; line-height: 1.75 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
       h1: 'font-size: 52px; font-weight: 400; color: #c9302c !important; line-height: 1.15 !important; margin: 70px 0 35px; letter-spacing: -0.03em; font-family: "Bodoni MT", "Didot", serif; text-align: center;',
       h2: 'font-size: 38px; font-weight: 400; color: #2c2c2c !important; line-height: 1.25 !important; margin: 60px 0 30px; letter-spacing: -0.02em; font-family: "Bodoni MT", "Didot", serif; border-top: 1px solid #c9302c; border-bottom: 1px solid #c9302c; padding: 15px 0; text-align: center;',
       h3: 'font-size: 30px; font-weight: 400; color: #2c2c2c !important; line-height: 1.35 !important; margin: 50px 0 25px; font-family: "Bodoni MT", "Didot", serif;',
@@ -366,7 +366,7 @@ const STYLES = {
       ul: 'margin: 35px 0; padding-left: 25px; list-style: disc;',
       ol: 'margin: 35px 0; padding-left: 25px;',
       li: 'margin: 12px 0; line-height: 1.75 !important; color: #2c2c2c !important;',
-      blockquote: 'margin: 45px 0; padding: 0 40px; background-color: transparent !important; border-left: none; color: #2c2c2c !important; font-size: 24px; line-height: 1.6 !important; font-style: italic; text-align: center; font-family: "Bodoni MT", "Didot", serif;',
+      blockquote: 'margin: 32px 0; padding: 0 32px; background-color: transparent !important; border-left: none; color: #2c2c2c !important; font-size: 20px; line-height: 1.5 !important; font-style: italic; text-align: center; font-family: "Bodoni MT", "Didot", serif;',
       code: 'font-family: "Courier Prime", monospace; font-size: 17px; padding: 2px 6px; background-color: #f9f9f9 !important; color: #c9302c !important; border: 1px solid #e0e0e0;',
       pre: 'margin: 40px 0; padding: 30px; background-color: #f9f9f9 !important; border-left: 5px solid #c9302c; overflow-x: auto; line-height: 1.6 !important;',
       hr: 'margin: 70px auto; border: none; height: 1px; background-color: #c9302c !important; max-width: 100px;',
@@ -382,7 +382,7 @@ const STYLES = {
   'ando-concrete': {
     name: '安藤·清水',
     styles: {
-      container: 'max-width: 600px; margin: 0 auto; padding: 60px 24px 80px 24px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 2 !important; color: #4a4a4a !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 600px; margin: 0 auto; padding: 20px 24px 80px 24px; font-family: "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 2 !important; color: #4a4a4a !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 28px; font-weight: 300; color: #1a1a1a !important; line-height: 1.5 !important; margin: 60px 0 50px; padding-bottom: 30px; border-bottom: 1px solid #d0d0d0; letter-spacing: 0.2em; text-transform: uppercase;',
       h2: 'font-size: 20px; font-weight: 400; color: #2a2a2a !important; line-height: 1.6 !important; margin: 70px 0 40px; padding: 20px 0; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; letter-spacing: 0.15em; background-color: #fafafa !important;',
       h3: 'font-size: 17px; font-weight: 400; color: #3a3a3a !important; line-height: 1.7 !important; margin: 50px 0 30px; letter-spacing: 0.1em;',
@@ -396,7 +396,7 @@ const STYLES = {
       ul: 'margin: 50px 0; padding-left: 32px; list-style-type: circle;',
       ol: 'margin: 50px 0; padding-left: 32px; list-style-type: decimal;',
       li: 'margin: 25px 0; line-height: 2 !important; color: #4a4a4a !important; padding-left: 30px; position: relative;',
-      blockquote: 'margin: 60px 0; padding: 35px; background-color: #ffffff !important; border: 1px solid #d0d0d0; color: #3a3a3a !important; font-size: 15px; line-height: 2.2 !important; letter-spacing: 0.05em; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);',
+      blockquote: 'margin: 40px 0; padding: 20px 24px; background-color: #ffffff !important; border: 1px solid #d0d0d0; color: #3a3a3a !important; font-size: 15px; line-height: 1.8 !important; letter-spacing: 0.05em; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);',
       code: 'font-family: "Courier New", Courier, monospace; font-size: 14px; padding: 3px 8px; background-color: #f0f0f0 !important; color: #4a4a4a !important; border: 1px solid #d0d0d0;',
       pre: 'margin: 60px 0; padding: 40px; background-color: #2a2a2a !important; color: #f0f0f0 !important; border: none; overflow-x: auto; line-height: 1.8 !important; box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);',
       hr: 'margin: 60px auto; border: none; width: 60px; height: 1px; background-color: #c0c0c0 !important;',
@@ -411,7 +411,7 @@ const STYLES = {
   'gaudi-organic': {
     name: '高迪·有机',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 60px 24px; font-family: "Baskerville", "Georgia", serif; font-size: 18px; line-height: 1.8 !important; color: #3d2914 !important; background-color: #fff5e6 !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 20px 24px 60px 24px; font-family: "Baskerville", "Georgia", serif; font-size: 18px; line-height: 1.8 !important; color: #3d2914 !important; background-color: #fff5e6 !important; word-wrap: break-word;',
       h1: 'font-size: 52px; font-weight: 700; color: #ff6b6b !important; background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #5b86e5, #a55eea); -webkit-background-clip: text; background-clip: text; line-height: 1.2 !important; margin: 70px 0 35px; text-align: center; letter-spacing: -0.02em; position: relative; padding: 20px;',
       h2: 'font-size: 38px; font-weight: 600; color: #c0392b !important; line-height: 1.3 !important; margin: 60px 0 30px; text-align: center; position: relative; padding: 15px 30px; background: radial-gradient(ellipse at center, rgba(192, 57, 43, 0.08) 0%, transparent 70%); border-radius: 50% 20% / 10% 40%;',
       h3: 'font-size: 28px; font-weight: 600; color: #27ae60 !important; line-height: 1.4 !important; margin: 50px 0 25px; padding-left: 35px; position: relative; border-left: 5px wavy #27ae60;',
@@ -425,7 +425,7 @@ const STYLES = {
       ul: 'margin: 35px 0; padding-left: 32px; list-style-type: square;',
       ol: 'margin: 35px 0; padding-left: 32px; list-style-type: decimal;',
       li: 'margin: 20px 0; line-height: 1.8 !important; color: #3d2914 !important; padding-left: 45px; position: relative; padding: 15px 25px 15px 45px; background: linear-gradient(90deg, rgba(255, 193, 7, 0.1) 0%, transparent 30%); border-radius: 30px 60px 120px 30px / 120px 30px 60px 30px;',
-      blockquote: 'margin: 50px auto; padding: 35px 40px; background: radial-gradient(circle at top left, rgba(255, 107, 107, 0.1) 0%, rgba(109, 207, 127, 0.1) 25%, rgba(78, 205, 196, 0.1) 50%, rgba(91, 134, 229, 0.1) 75%, rgba(165, 94, 234, 0.1) 100%); border: 3px solid transparent; border-image: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #5b86e5, #a55eea) 1; border-radius: 50% 20% / 10% 40%; color: #3d2914 !important; font-size: 20px; line-height: 1.8 !important; font-style: italic; text-align: center; max-width: 600px;',
+      blockquote: 'margin: 32px auto; padding: 20px 28px; background: radial-gradient(circle at top left, rgba(255, 107, 107, 0.1) 0%, rgba(109, 207, 127, 0.1) 25%, rgba(78, 205, 196, 0.1) 50%, rgba(91, 134, 229, 0.1) 75%, rgba(165, 94, 234, 0.1) 100%); border: 3px solid transparent; border-image: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #5b86e5, #a55eea) 1; border-radius: 50% 20% / 10% 40%; color: #3d2914 !important; font-size: 18px; line-height: 1.6 !important; font-style: italic; text-align: center; max-width: 600px;',
       code: 'font-family: "Courier New", Courier, monospace; font-size: 16px; padding: 4px 10px; background: linear-gradient(45deg, rgba(255, 107, 107, 0.2), rgba(255, 217, 61, 0.2)); color: #c0392b !important; border-radius: 50% / 30%; font-weight: 600;',
       pre: 'margin: 45px 0; padding: 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #fda085 100%); color: #fff !important; border-radius: 30% 70% 70% 30% / 60% 40% 60% 40%; overflow-x: auto; line-height: 1.6 !important; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); position: relative;',
       hr: 'margin: 70px auto; border: none; height: 30px; background: url("data:image/svg+xml,%3Csvg width=\'100\' height=\'30\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0,15 Q25,0 50,15 T100,15\' stroke=\'%23c0392b\' stroke-width=\'2\' fill=\'none\'/%3E%3C/svg%3E") repeat-x center; background-size: 100px 30px; max-width: 300px;',
@@ -441,7 +441,7 @@ const STYLES = {
   'guardian': {
     name: 'Guardian 卫报',
     styles: {
-      container: 'max-width: 700px; margin: 0 auto; padding: 40px 12px; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 700px; margin: 0 auto; padding: 16px 12px 40px 12px; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.6 !important; color: #121212 !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 42px; font-weight: 700; color: #052962 !important; line-height: 1.15 !important; margin: 40px 0 20px; padding-bottom: 12px; border-bottom: 3px solid #052962;',
       h2: 'font-size: 32px; font-weight: 600; color: #052962 !important; line-height: 1.25 !important; margin: 35px 0 18px; padding-left: 16px; border-left: 5px solid #C70000; background-color: #f6f6f6 !important; padding: 12px 16px;',
       h3: 'font-size: 24px; font-weight: 600; color: #052962 !important; line-height: 1.3 !important; margin: 30px 0 15px; padding: 8px 12px; background-color: #FEC200 !important; display: inline-block;',
@@ -455,7 +455,7 @@ const STYLES = {
       ul: 'margin: 20px 0; padding-left: 24px;',
       ol: 'margin: 20px 0; padding-left: 24px;',
       li: 'margin: 10px 0; line-height: 1.7 !important; color: #121212 !important;',
-      blockquote: 'margin: 30px 0; padding: 20px 24px; background-color: #FEC200 !important; border-left: 4px solid #C70000; color: #052962 !important; font-size: 19px; line-height: 1.6 !important; font-weight: 500; position: relative;',
+      blockquote: 'margin: 24px 0; padding: 14px 20px; background-color: #FEC200 !important; border-left: 4px solid #C70000; color: #052962 !important; font-size: 17px; line-height: 1.5 !important; font-weight: 500; position: relative;',
       code: 'font-family: "SF Mono", Consolas, monospace; font-size: 15px; padding: 3px 6px; background-color: #f6f6f6 !important; color: #C70000 !important; border-radius: 3px;',
       pre: 'margin: 25px 0; padding: 20px; background-color: #052962 !important; color: #fff !important; border-radius: 4px; overflow-x: auto; line-height: 1.5 !important;',
       hr: 'margin: 40px 0; border: none; height: 2px; background-color: #052962 !important;',
@@ -470,7 +470,7 @@ const STYLES = {
   'nikkei': {
     name: 'Nikkei 日経',
     styles: {
-      container: 'max-width: 650px; margin: 0 auto; padding: 20px 12px; font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; font-size: 15px; line-height: 1.6 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word;',
+      container: 'max-width: 650px; margin: 0 auto; padding: 10px 12px 20px 12px; font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; font-size: 15px; line-height: 1.6 !important; color: #1a1a1a !important; background-color: #fff !important; word-wrap: break-word;',
       h1: 'font-size: 24px; font-weight: 700; color: #000 !important; line-height: 1.3 !important; margin: 25px 0 15px; padding-bottom: 8px; border-bottom: 2px solid #000;',
       h2: 'font-size: 18px; font-weight: 700; color: #c41230 !important; line-height: 1.4 !important; margin: 20px 0 12px; padding-left: 10px; border-left: 3px solid #c41230;',
       h3: 'font-size: 16px; font-weight: 600; color: #000 !important; line-height: 1.4 !important; margin: 18px 0 10px; padding: 4px 8px; background-color: #f5f5f5 !important;',
@@ -484,7 +484,7 @@ const STYLES = {
       ul: 'margin: 15px 0; padding-left: 28px; list-style-type: disc;',
       ol: 'margin: 15px 0; padding-left: 28px; list-style-type: decimal;',
       li: 'margin: 6px 0; line-height: 1.6 !important; color: #1a1a1a !important;',
-      blockquote: 'margin: 20px 0; padding: 12px 15px; background-color: transparent !important; border-left: 2px solid #c41230; border-right: 2px solid #c41230; color: #1a1a1a !important; font-size: 14px; line-height: 1.6 !important;',
+      blockquote: 'margin: 16px 0; padding: 10px 15px; background-color: transparent !important; border-left: 2px solid #c41230; border-right: 2px solid #c41230; color: #1a1a1a !important; font-size: 14px; line-height: 1.5 !important;',
       code: 'font-family: "Courier New", monospace; font-size: 13px; padding: 2px 4px; background-color: #f5f5f5 !important; color: #c41230 !important;',
       pre: 'margin: 20px 0; padding: 15px; background-color: #f5f5f5 !important; border: 1px solid #ddd; overflow-x: auto; line-height: 1.4 !important;',
       hr: 'margin: 30px 0; border: none; height: 1px; background-color: #000 !important;',
@@ -499,7 +499,7 @@ const STYLES = {
   'lemonde': {
     name: 'Le Monde 世界报',
     styles: {
-      container: 'max-width: 680px; margin: 0 auto; padding: 60px 20px; font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.8 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
+      container: 'max-width: 680px; margin: 0 auto; padding: 20px 20px 60px 20px; font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 1.8 !important; color: #2c2c2c !important; background-color: #fffef9 !important; word-wrap: break-word;',
       h1: 'font-size: 48px; font-weight: 400; color: #1a1a1a !important; line-height: 1.2 !important; margin: 60px 0 30px; text-align: center; letter-spacing: -0.02em; font-family: "Didot", Georgia, serif; text-transform: uppercase;',
       h2: 'font-size: 36px; font-weight: 300; color: #2c2c2c !important; line-height: 1.3 !important; margin: 50px 0 25px; text-align: center; padding: 20px 0; border-top: 1px solid #2c2c2c; border-bottom: 1px solid #2c2c2c; font-style: italic;',
       h3: 'font-size: 28px; font-weight: 400; color: #2c2c2c !important; line-height: 1.4 !important; margin: 40px 0 20px; padding-left: 20px; position: relative; font-style: italic;',
@@ -513,7 +513,7 @@ const STYLES = {
       ul: 'margin: 30px 0; padding-left: 32px; list-style-type: disc;',
       ol: 'margin: 30px 0; padding-left: 32px; list-style-type: decimal;',
       li: 'margin: 15px 0; line-height: 1.8 !important; color: #2c2c2c !important; padding-left: 35px; position: relative;',
-      blockquote: 'margin: 40px auto; padding: 30px 40px; background-color: transparent !important; border-top: 1px solid #2c2c2c; border-bottom: 1px solid #2c2c2c; color: #2c2c2c !important; font-size: 22px; line-height: 1.7 !important; font-style: italic; text-align: center; max-width: 500px; font-family: Georgia, serif;',
+      blockquote: 'margin: 32px auto; padding: 20px 32px; background-color: transparent !important; border-top: 1px solid #2c2c2c; border-bottom: 1px solid #2c2c2c; color: #2c2c2c !important; font-size: 19px; line-height: 1.6 !important; font-style: italic; text-align: center; max-width: 500px; font-family: Georgia, serif;',
       code: 'font-family: "Courier Prime", monospace; font-size: 16px; padding: 2px 6px; background-color: #f9f9f9 !important; color: #2c2c2c !important; border: 1px solid #e0e0e0;',
       pre: 'margin: 35px 0; padding: 25px; background-color: #f9f9f9 !important; border: 1px solid #2c2c2c; overflow-x: auto; line-height: 1.6 !important;',
       hr: 'margin: 60px auto; border: none; text-align: center; height: 20px; background: url("data:image/svg+xml,%3Csvg width=\'80\' height=\'20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ctext x=\'40\' y=\'12\' text-anchor=\'middle\' font-size=\'20\' fill=\'%232c2c2c\'%3E⁂%3C/text%3E%3C/svg%3E") no-repeat center; background-size: 80px 20px;',
