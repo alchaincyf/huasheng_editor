@@ -313,6 +313,240 @@ class ImageCompressor {
 }
 
 /**
+ * 深色模式颜色转换器 - 为微信公众号深色模式自动生成适配颜色
+ */
+class DarkModeColorConverter {
+  constructor() {
+    // 颜色映射规则：亮色 → 深色
+    this.colorMap = {
+      // 白色系 → 深色系
+      '#ffffff': '#1e1e1e',
+      '#fff': '#1e1e1e',
+      '#fafafa': '#2a2a2a',
+      '#f5f5f5': '#2d2d2d',
+      '#f9f9f9': '#2d2d2d',
+      '#f8f8f8': '#2d2d2d',
+      '#f0f0f0': '#333333',
+      '#f8f9fa': '#2d2d2d',
+      '#f5f9fc': '#2a3540',
+      '#fff3cd': '#4d3800',
+      '#fff1e5': '#2d2419',
+      '#faf9f7': '#1e1d1b',
+      '#ffe6e6': '#4d1a1a',
+
+      // 黑色系 → 浅色系
+      '#000000': '#e8e8e8',
+      '#000': '#e8e8e8',
+      '#0a0a0a': '#f5f5f5',
+      '#1a1a1a': '#e0e0e0',
+      '#1e1e1e': '#dedede',
+      '#2a2a2a': '#d5d5d5',
+      '#2b2b2b': '#d5d5d5',
+      '#2c3e50': '#b8c5d6',
+      '#33302e': '#d5d2d0',
+      '#333': '#d0d0d0',
+      '#3a3a3a': '#c8c8c8',
+      '#3f3f3f': '#c5c5c5',
+      '#34495e': '#b8c5d6',
+      '#444': '#c0c0c0',
+      '#555': '#b8b8b8',
+      '#666': '#b0b0b0',
+      '#5a5a5a': '#b8b8b8',
+      '#4a4a4a': '#c0c0c0',
+
+      // 彩色 - 主题色保持但调整亮度
+      '#3498db': '#5dade2',  // 蓝色 - 稍亮
+      '#0066cc': '#4d9fff',  // 蓝色 - 稍亮
+      '#2196f3': '#42a5f5',  // 蓝色 - 稍亮
+      '#0d7680': '#26a8b5',  // 青色 - 稍亮
+      '#d32f2f': '#ef5350',  // 红色 - 稍亮
+      '#990f3d': '#c2185b',  // 深红 - 稍亮
+      '#e74c3c': '#e74c3c',  // 保持
+      '#d73a49': '#f97583',  // 红色 - 稍亮
+      '#d63031': '#e74c3c',  // 红色 - 稍亮
+      '#C15F3C': '#e97d5b',  // Claude橙 - 稍亮
+      '#9DC88D': '#b5e7a0',  // 绿色 - 稍亮
+      '#8b7355': '#a08968',  // 棕色 - 稍亮
+      '#8b4513': '#a0522d',  // 棕色 - 稍亮
+      '#ff9800': '#ffa726',  // 橙色 - 稍亮
+      '#00a67d': '#26c99c',  // 绿色 - 稍亮
+
+      // 灰色系
+      '#e0e0e0': '#404040',
+      '#e5e5e5': '#3d3d3d',
+      '#e1e4e8': '#3d4148',
+      '#d0d0d0': '#454545',
+      '#ccc': '#4a4a4a',
+      '#999': '#888',
+      '#cec6b9': '#4a453e',
+    };
+  }
+
+  // 解析 RGB/RGBA 颜色
+  parseRgb(color) {
+    const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    if (match) {
+      return {
+        r: parseInt(match[1]),
+        g: parseInt(match[2]),
+        b: parseInt(match[3]),
+        a: match[4] ? parseFloat(match[4]) : 1
+      };
+    }
+    return null;
+  }
+
+  // RGB 转 HEX
+  rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(x => {
+      const hex = x.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  }
+
+  // HEX 转 RGB
+  hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  // 计算颜色亮度 (0-255)
+  getLuminance(r, g, b) {
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  // 智能转换颜色到深色模式
+  convertColor(color) {
+    if (!color || color === 'transparent' || color === 'inherit' || color === 'currentColor') {
+      return null;
+    }
+
+    // 移除空格并转小写
+    color = color.trim().toLowerCase();
+
+    // 1. 先查表
+    if (this.colorMap[color]) {
+      return this.colorMap[color];
+    }
+
+    // 2. 处理 RGB/RGBA
+    const rgb = this.parseRgb(color);
+    if (rgb) {
+      const luminance = this.getLuminance(rgb.r, rgb.g, rgb.b);
+
+      // 亮色 → 深色
+      if (luminance > 200) {
+        const newR = Math.max(0, Math.floor(rgb.r * 0.15));
+        const newG = Math.max(0, Math.floor(rgb.g * 0.15));
+        const newB = Math.max(0, Math.floor(rgb.b * 0.15));
+        return rgb.a < 1
+          ? `rgba(${newR}, ${newG}, ${newB}, ${rgb.a})`
+          : this.rgbToHex(newR, newG, newB);
+      }
+      // 深色 → 亮色
+      else if (luminance < 80) {
+        const newR = Math.min(255, Math.floor(rgb.r + (255 - rgb.r) * 0.8));
+        const newG = Math.min(255, Math.floor(rgb.g + (255 - rgb.g) * 0.8));
+        const newB = Math.min(255, Math.floor(rgb.b + (255 - rgb.b) * 0.8));
+        return rgb.a < 1
+          ? `rgba(${newR}, ${newG}, ${newB}, ${rgb.a})`
+          : this.rgbToHex(newR, newG, newB);
+      }
+      // 中间色 - 稍微调亮
+      else {
+        const newR = Math.min(255, Math.floor(rgb.r * 1.2));
+        const newG = Math.min(255, Math.floor(rgb.g * 1.2));
+        const newB = Math.min(255, Math.floor(rgb.b * 1.2));
+        return rgb.a < 1
+          ? `rgba(${newR}, ${newG}, ${newB}, ${rgb.a})`
+          : this.rgbToHex(newR, newG, newB);
+      }
+    }
+
+    // 3. 处理 HEX 颜色（转为 RGB 再处理）
+    if (color.startsWith('#')) {
+      const rgbColor = this.hexToRgb(color);
+      if (rgbColor) {
+        return this.convertColor(`rgb(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b})`);
+      }
+    }
+
+    // 4. 处理渐变（保持渐变，只转换颜色）
+    if (color.includes('gradient')) {
+      return color.replace(/#[0-9a-f]{3,6}|rgba?\([^)]+\)/gi, (match) => {
+        const converted = this.convertColor(match);
+        return converted || match;
+      });
+    }
+
+    return null;
+  }
+
+  // 从 CSS 样式字符串中提取颜色相关属性
+  extractColors(styleString) {
+    const colors = {
+      color: null,
+      backgroundColor: null,
+      borderColor: null
+    };
+
+    // 提取 color（支持 !important）
+    const colorMatch = styleString.match(/(?:^|;)\s*color:\s*([^;]+?)(?:;|$)/i);
+    if (colorMatch) {
+      const colorValue = colorMatch[1].replace(/\s*!important\s*$/i, '').trim();
+      // 排除渐变和特殊值
+      if (colorValue && !colorValue.includes('gradient') && !colorValue.includes('url(') &&
+          colorValue !== 'transparent' && colorValue !== 'inherit' && colorValue !== 'currentColor') {
+        colors.color = colorValue;
+      }
+    }
+
+    // 提取 background-color 或 background（支持 !important 和渐变）
+    const bgMatch = styleString.match(/(?:^|;)\s*background(?:-color)?:\s*([^;]+?)(?:;|$)/i);
+    if (bgMatch) {
+      const bgValue = bgMatch[1].replace(/\s*!important\s*$/i, '').trim();
+      // 处理渐变（linear-gradient）
+      if (bgValue.includes('gradient')) {
+        colors.backgroundColor = bgValue; // 保留渐变，稍后特殊处理
+      }
+      // 处理纯色背景（排除 url()）
+      else if (!bgValue.includes('url(') && bgValue !== 'transparent' && bgValue !== 'inherit') {
+        colors.backgroundColor = bgValue;
+      }
+    }
+
+    // 提取 border-color 或 border-left/right/top/bottom/border（支持 !important）
+    const borderPatterns = [
+      /(?:^|;)\s*border-color:\s*([^;]+?)(?:;|$)/i,
+      /(?:^|;)\s*border-left:\s*([^;]+?)(?:;|$)/i,
+      /(?:^|;)\s*border-right:\s*([^;]+?)(?:;|$)/i,
+      /(?:^|;)\s*border-top:\s*([^;]+?)(?:;|$)/i,
+      /(?:^|;)\s*border-bottom:\s*([^;]+?)(?:;|$)/i,
+      /(?:^|;)\s*border:\s*([^;]+?)(?:;|$)/i
+    ];
+
+    for (const pattern of borderPatterns) {
+      const borderMatch = styleString.match(pattern);
+      if (borderMatch) {
+        const borderValue = borderMatch[1].replace(/\s*!important\s*$/i, '').trim();
+        // 提取颜色部分（border 可能是 "1px solid #ccc" 或 "4px solid #C15F3C" 格式）
+        const borderColorMatch = borderValue.match(/#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)/);
+        if (borderColorMatch) {
+          colors.borderColor = borderColorMatch[0];
+          break; // 找到第一个匹配即可
+        }
+      }
+    }
+
+    return colors;
+  }
+}
+
+/**
  * 图床管理器 - 支持多个图床服务，智能降级
  */
 class ImageHostManager {
@@ -885,6 +1119,67 @@ const markdown = \`![图片](img://\${imageId})\`;
       return container.outerHTML;
     },
 
+    // 生成深色模式 CSS 规则
+    generateDarkModeCSS() {
+      const style = STYLES[this.currentStyle].styles;
+      const converter = new DarkModeColorConverter();
+      let cssRules = [];
+
+      // 为每个选择器生成深色模式样式
+      Object.keys(style).forEach(selector => {
+        const styleString = style[selector];
+        const colors = converter.extractColors(styleString);
+
+        let darkStyles = [];
+
+        if (colors.color) {
+          const darkColor = converter.convertColor(colors.color);
+          if (darkColor) {
+            darkStyles.push(`color: ${darkColor} !important`);
+          }
+        }
+
+        if (colors.backgroundColor) {
+          const darkBg = converter.convertColor(colors.backgroundColor);
+          if (darkBg) {
+            darkStyles.push(`background-color: ${darkBg} !important`);
+            // 如果背景包含渐变，也转换渐变
+            if (colors.backgroundColor.includes('gradient')) {
+              darkStyles.push(`background: ${darkBg} !important`);
+            }
+          }
+        }
+
+        if (colors.borderColor) {
+          const darkBorder = converter.convertColor(colors.borderColor);
+          if (darkBorder) {
+            // 保留边框的其他属性，只替换颜色
+            const borderMatch = styleString.match(/border(?:-(?:left|right|top|bottom))?:\s*([^;]+)/i);
+            if (borderMatch) {
+              const borderValue = borderMatch[1].replace(/#[0-9a-fA-F]{3,6}|rgba?\([^)]+\)/, darkBorder);
+              const borderProp = borderMatch[0].split(':')[0];
+              darkStyles.push(`${borderProp}: ${borderValue} !important`);
+            }
+          }
+        }
+
+        if (darkStyles.length > 0) {
+          // 为容器使用 .wechat-article-content 类，其他使用标签选择器
+          const darkSelector = selector === 'container'
+            ? '.wechat-article-content'
+            : `.wechat-article-content ${selector}`;
+          cssRules.push(`${darkSelector} { ${darkStyles.join('; ')} }`);
+        }
+      });
+
+      return `
+        /* 微信公众号深色模式适配 */
+        @media (prefers-color-scheme: dark) {
+          ${cssRules.join('\n          ')}
+        }
+      `.trim();
+    },
+
     groupConsecutiveImages(doc) {
       const body = doc.body;
       const children = Array.from(body.children);
@@ -1325,10 +1620,34 @@ const markdown = \`![图片](img://\${imageId})\`;
           li.setAttribute('style', currentStyle);
         });
 
-        const simplifiedHTML = doc.body.innerHTML;
+        // 为容器添加类名以便深色模式 CSS 选择器使用
+        const contentDiv = doc.querySelector('div[style*="max-width"]') || doc.body.firstElementChild;
+        if (contentDiv) {
+          contentDiv.classList.add('wechat-article-content');
+        }
+
+        // 生成深色模式 CSS
+        const darkModeCSS = this.generateDarkModeCSS();
+
+        // 构建完整的 HTML，包含 meta 标签和 style 标签
+        const fullHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+${darkModeCSS}
+  </style>
+</head>
+<body>
+${doc.body.innerHTML}
+</body>
+</html>`;
+
         const plainText = doc.body.textContent || '';
 
-        const htmlBlob = new Blob([simplifiedHTML], { type: 'text/html' });
+        const htmlBlob = new Blob([fullHTML], { type: 'text/html' });
         const textBlob = new Blob([plainText], { type: 'text/plain' });
 
         const clipboardItem = new ClipboardItem({
@@ -1339,7 +1658,7 @@ const markdown = \`![图片](img://\${imageId})\`;
         await navigator.clipboard.write([clipboardItem]);
 
         this.copySuccess = true;
-        this.showToast('复制成功', 'success');
+        this.showToast('复制成功（已包含深色模式适配）', 'success');
 
         setTimeout(() => {
           this.copySuccess = false;
