@@ -1570,9 +1570,6 @@ const markdown = \`![图片](img://\${imageId})\`;
           doc.body.appendChild(section);
         }
 
-        // Dark-mode safety: keep quote text readable when WeChat overrides colors.
-        this.applyWeChatDarkModeFixes(doc);
-
         // 代码块简化
         const codeBlocks = doc.querySelectorAll('div[style*="border-radius: 8px"]');
         codeBlocks.forEach(block => {
@@ -1629,25 +1626,19 @@ const markdown = \`![图片](img://\${imageId})\`;
         // 生成深色模式 CSS
         const darkModeCSS = this.generateDarkModeCSS();
 
-        // 构建完整的 HTML，包含 meta 标签和 style 标签
-        const fullHTML = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="color-scheme" content="light dark">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-${darkModeCSS}
-  </style>
-</head>
-<body>
-${doc.body.innerHTML}
-</body>
-</html>`;
+        // 将 style 标签插入到 body 的开头（微信会过滤 head 标签）
+        const styleElement = doc.createElement('style');
+        styleElement.textContent = darkModeCSS;
+        doc.body.insertBefore(styleElement, doc.body.firstChild);
 
+        // 添加 meta 标签支持（作为注释保留，实际可能被过滤）
+        const metaComment = doc.createComment(' color-scheme: light dark ');
+        doc.body.insertBefore(metaComment, doc.body.firstChild);
+
+        const simplifiedHTML = doc.body.innerHTML;
         const plainText = doc.body.textContent || '';
 
-        const htmlBlob = new Blob([fullHTML], { type: 'text/html' });
+        const htmlBlob = new Blob([simplifiedHTML], { type: 'text/html' });
         const textBlob = new Blob([plainText], { type: 'text/plain' });
 
         const clipboardItem = new ClipboardItem({
@@ -1667,28 +1658,6 @@ ${doc.body.innerHTML}
         console.error('复制失败:', error);
         this.showToast('复制失败', 'error');
       }
-    },
-
-    applyWeChatDarkModeFixes(doc) {
-      const blockquotes = doc.querySelectorAll('blockquote');
-      if (blockquotes.length === 0) {
-        return;
-      }
-
-      blockquotes.forEach(blockquote => {
-        const currentStyle = blockquote.getAttribute('style') || '';
-        if (!/background(?:-color)?:/i.test(currentStyle)) {
-          return;
-        }
-
-        if (/background(?:-color)?:\s*transparent/i.test(currentStyle)) {
-          return;
-        }
-
-        const additions = 'background-color: rgba(0, 0, 0, 0.12) !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);';
-        const newStyle = `${currentStyle}; ${additions}`.replace(/;\s*;/g, ';').trim();
-        blockquote.setAttribute('style', newStyle);
-      });
     },
 
     async convertImageToBase64(imgElement) {
