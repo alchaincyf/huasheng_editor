@@ -1322,6 +1322,26 @@ const markdown = \`![图片](img://\${imageId})\`;
           li.setAttribute('style', currentStyle);
         });
 
+        // 深色模式适配：调整引用块样式，使用透明黑色让微信自动转换
+        const blockquotes = doc.querySelectorAll('blockquote');
+        blockquotes.forEach(blockquote => {
+          const currentStyle = blockquote.getAttribute('style') || '';
+
+          // 移除现有的背景色和文字颜色
+          let newStyle = currentStyle
+            .replace(/background(?:-color)?:\s*[^;]+;?/gi, '')
+            .replace(/color:\s*[^;]+;?/gi, '');
+
+          // 添加深色模式友好的样式
+          // 使用半透明黑色背景和文字，微信会在深色模式下自动反转
+          newStyle += '; background: rgba(0, 0, 0, 0.05) !important';
+          newStyle += '; color: rgba(0, 0, 0, 0.8) !important';
+
+          // 清理多余的分号
+          newStyle = newStyle.replace(/;\s*;/g, ';').replace(/^\s*;\s*|\s*;\s*$/g, '').trim();
+          blockquote.setAttribute('style', newStyle);
+        });
+
         const simplifiedHTML = doc.body.innerHTML;
         const plainText = doc.body.textContent || '';
 
