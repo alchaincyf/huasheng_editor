@@ -1275,6 +1275,9 @@ const markdown = \`![图片](img://\${imageId})\`;
           doc.body.appendChild(section);
         }
 
+        // Dark-mode safety: keep quote text readable when WeChat overrides colors.
+        this.applyWeChatDarkModeFixes(doc);
+
         // 代码块简化
         const codeBlocks = doc.querySelectorAll('div[style*="border-radius: 8px"]');
         codeBlocks.forEach(block => {
@@ -1345,6 +1348,28 @@ const markdown = \`![图片](img://\${imageId})\`;
         console.error('复制失败:', error);
         this.showToast('复制失败', 'error');
       }
+    },
+
+    applyWeChatDarkModeFixes(doc) {
+      const blockquotes = doc.querySelectorAll('blockquote');
+      if (blockquotes.length === 0) {
+        return;
+      }
+
+      blockquotes.forEach(blockquote => {
+        const currentStyle = blockquote.getAttribute('style') || '';
+        if (!/background(?:-color)?:/i.test(currentStyle)) {
+          return;
+        }
+
+        if (/background(?:-color)?:\s*transparent/i.test(currentStyle)) {
+          return;
+        }
+
+        const additions = 'background-color: rgba(0, 0, 0, 0.12) !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);';
+        const newStyle = `${currentStyle}; ${additions}`.replace(/;\s*;/g, ';').trim();
+        blockquote.setAttribute('style', newStyle);
+      });
     },
 
     async convertImageToBase64(imgElement) {
