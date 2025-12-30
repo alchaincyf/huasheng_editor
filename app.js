@@ -856,6 +856,24 @@ const markdown = \`![图片](img://\${imageId})\`;
       const style = STYLES[this.currentStyle].styles;
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
+      const headingInlineOverrides = {
+        strong: 'font-weight: 700; color: inherit !important; background-color: transparent !important;',
+        em: 'font-style: italic; color: inherit !important; background-color: transparent !important;',
+        a: 'color: inherit !important; text-decoration: none !important; border-bottom: 1px solid currentColor !important; background-color: transparent !important;',
+        code: 'color: inherit !important; background-color: transparent !important; border: none !important; padding: 0 !important;',
+        span: 'color: inherit !important; background-color: transparent !important;',
+        b: 'font-weight: 700; color: inherit !important; background-color: transparent !important;',
+        i: 'font-style: italic; color: inherit !important; background-color: transparent !important;',
+        del: 'color: inherit !important; background-color: transparent !important;',
+        mark: 'color: inherit !important; background-color: transparent !important;',
+        s: 'color: inherit !important; background-color: transparent !important;',
+        u: 'color: inherit !important; text-decoration: underline !important; background-color: transparent !important;',
+        ins: 'color: inherit !important; text-decoration: underline !important; background-color: transparent !important;',
+        kbd: 'color: inherit !important; background-color: transparent !important; border: none !important; padding: 0 !important;',
+        sub: 'color: inherit !important; background-color: transparent !important;',
+        sup: 'color: inherit !important; background-color: transparent !important;'
+      };
+      const headingInlineSelectorList = Object.keys(headingInlineOverrides).join(', ');
 
       // 先处理图片网格布局（在应用样式之前）
       this.groupConsecutiveImages(doc);
@@ -875,6 +893,31 @@ const markdown = \`![图片](img://\${imageId})\`;
 
           const currentStyle = el.getAttribute('style') || '';
           el.setAttribute('style', currentStyle + '; ' + style[selector]);
+        });
+      });
+
+      // 标题内的行内元素统一继承标题颜色，避免各主题样式冲突
+      const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      headings.forEach(heading => {
+        const inlineNodes = heading.querySelectorAll(headingInlineSelectorList);
+        inlineNodes.forEach(node => {
+          const tag = node.tagName.toLowerCase();
+          let override = headingInlineOverrides[tag];
+          if (!override) {
+            return;
+          }
+
+          const currentStyle = node.getAttribute('style') || '';
+          const sanitizedStyle = currentStyle
+            .replace(/color:\s*[^;]+;?/gi, '')
+            .replace(/background(?:-color)?:\s*[^;]+;?/gi, '')
+            .replace(/border(?:-bottom)?:\s*[^;]+;?/gi, '')
+            .replace(/text-decoration:\s*[^;]+;?/gi, '')
+            .replace(/box-shadow:\s*[^;]+;?/gi, '')
+            .replace(/padding:\s*[^;]+;?/gi, '')
+            .replace(/;\s*;/g, ';')
+            .trim();
+          node.setAttribute('style', sanitizedStyle + '; ' + override);
         });
       });
 
