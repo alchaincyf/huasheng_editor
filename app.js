@@ -923,6 +923,28 @@ const markdown = \`![图片](img://\${imageId})\`;
     },
 
     preprocessMarkdown(content) {
+      // 规范化水平分割线格式（修复从飞书等复制时的解析问题）
+      // 匹配 * * *、- - -、_ _ _ 等格式（包括带空格的变体）
+      // 确保它们被正确解析为 <hr> 而非无序列表
+      content = content.replace(/^[ ]{0,3}(\*[ ]*\*[ ]*\*[\* ]*)[ \t]*$/gm, '***');
+      content = content.replace(/^[ ]{0,3}(-[ ]*-[ ]*-[- ]*)[ \t]*$/gm, '---');
+      content = content.replace(/^[ ]{0,3}(_[ ]*_[ ]*_[_ ]*)[ \t]*$/gm, '___');
+
+      // 修复飞书等复制时的加粗格式断裂问题
+      // 例如：**text** **more** -> **text more**（合并相邻的加粗片段）
+      // 处理 **空白** (结束后紧跟开始，中间有任意空白) -> 单个空格
+      content = content.replace(/\*\*\s+\*\*/g, ' ');
+      // 处理 **** 或更多连续星号（通常是格式错误）-> 移除
+      content = content.replace(/\*{4,}/g, '');
+      // 处理 word** 或 **word 紧贴标点的情况（中文标点）
+      // 在中文右标点前的 ** 后添加零宽空格，帮助解析
+      content = content.replace(/\*\*([）」』》〉】〕〗］｝"'。，、；：？！])/g, '**\u200B$1');
+      // 在中文左标点后的 ** 前添加零宽空格
+      content = content.replace(/([（「『《〈【〔〖［｛"'])\*\*/g, '$1\u200B**');
+      // 同样处理下划线格式
+      content = content.replace(/__\s+__/g, ' ');
+      content = content.replace(/_{4,}/g, '');
+
       // 规范化列表项格式
       content = content.replace(/^(\s*(?:\d+\.|-|\*)\s+[^:\n]+)\n\s*:\s*(.+?)$/gm, '$1: $2');
       content = content.replace(/^(\s*(?:\d+\.|-|\*)\s+.+?:)\s*\n\s+(.+?)$/gm, '$1 $2');
