@@ -142,6 +142,47 @@
       height: 20px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .header-link {
+      font-size: 13px;
+      color: var(--color-secondary);
+      text-decoration: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all 120ms;
+    }
+
+    .header-link:hover {
+      color: var(--color-primary);
+      background: var(--color-bg);
+      border-color: var(--color-border);
+    }
+
+    .header-link.primary {
+      color: #fff;
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+      font-weight: 600;
+    }
+
+    .header-link.primary:hover {
+      background: #0052cc;
+      border-color: #0052cc;
+      color: #fff;
+    }
+
     /* 样式选择区 - 横向滚动 */
     .styles-section {
       grid-column: 1 / -1;
@@ -748,6 +789,298 @@
       background: #D32F2F;
     }
 
+    /* 右下角浮动广告 */
+    .floating-ad {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 990;
+      font-family: var(--font-sans);
+    }
+
+    .floating-ad__collapsed {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 16px;
+      box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.12),
+        0 1px 2px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: floatingAdSlideIn 0.5s ease-out;
+    }
+
+    @keyframes floatingAdSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .floating-ad__collapsed:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .floating-ad__collapsed-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .floating-ad__collapsed-icon {
+      font-size: 24px;
+    }
+
+    .floating-ad__collapsed-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .floating-ad__collapsed-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .floating-ad__collapsed-tag {
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 100px;
+    }
+
+    .floating-ad__close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.05);
+      border: none;
+      border-radius: 50%;
+      font-size: 16px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 4px;
+    }
+
+    .floating-ad__close:hover {
+      background: rgba(0, 0, 0, 0.1);
+      color: #333;
+    }
+
+    .floating-ad__panel {
+      width: 320px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 20px;
+      box-shadow:
+        0 12px 48px rgba(0, 0, 0, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      animation: floatingAdExpandIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes floatingAdExpandIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .floating-ad__panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .floating-ad__panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .floating-ad__collapse {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: rgba(0, 0, 0, 0.05);
+      border: none;
+      border-radius: 8px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .floating-ad__collapse:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .floating-ad__list {
+      padding: 8px;
+    }
+
+    .floating-ad__item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .floating-ad__item:hover {
+      background: rgba(99, 102, 241, 0.06);
+    }
+
+    .floating-ad__icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .floating-ad__info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .floating-ad__header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .floating-ad__title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .floating-ad__tag {
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 100px;
+      flex-shrink: 0;
+    }
+
+    .floating-ad__subtitle {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    .floating-ad__coupon {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      background: rgba(249, 115, 22, 0.1);
+      color: #F97316;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+
+    .floating-ad__arrow {
+      color: #999;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .floating-ad__item:hover .floating-ad__arrow {
+      transform: translateX(2px);
+      color: #666;
+    }
+
+    .floating-ad__close-expanded {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: none;
+      border: none;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 13px;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .floating-ad__close-expanded:hover {
+      background: rgba(0, 0, 0, 0.03);
+      color: #555;
+    }
+
+    .floating-ad__tag--orange {
+      background: rgba(249, 115, 22, 0.12);
+      color: #EA580C;
+    }
+
+    .floating-ad__tag--blue {
+      background: rgba(59, 130, 246, 0.12);
+      color: #2563EB;
+    }
+
+    .floating-ad__tag--purple {
+      background: rgba(139, 92, 246, 0.12);
+      color: #7C3AED;
+    }
+
+    .floating-ad__tag--green {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+    }
+
+    .floating-ad__indicators {
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 4px;
+    }
+
+    .floating-ad__indicator {
+      width: 6px;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .floating-ad__indicator.active {
+      background: #6366F1;
+      width: 16px;
+      border-radius: 3px;
+    }
+
     /* 滚动条 */
     ::-webkit-scrollbar {
       width: 8px;
@@ -776,11 +1109,26 @@
       }
 
       .header {
+        flex-wrap: wrap;
+        gap: var(--space-xs);
         padding: var(--space-xs) var(--space-sm);
       }
 
       .logo {
         font-size: 14px;
+      }
+
+      .header-actions {
+        gap: 6px;
+      }
+
+      .header-links {
+        gap: 6px;
+      }
+
+      .header-link {
+        font-size: 11px;
+        padding: 3px 6px;
       }
 
       .github-link {
@@ -864,6 +1212,21 @@
         right: var(--space-md);
         bottom: var(--space-md);
       }
+
+      .floating-ad {
+        left: var(--space-md);
+        right: var(--space-md);
+        bottom: var(--space-md);
+      }
+
+      .floating-ad__collapsed {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .floating-ad__panel {
+        width: 100%;
+      }
     }
 
     /* 平板端优化 */
@@ -899,15 +1262,21 @@
         <span>公众号排版器</span>
         <span class="creator-info">Created by <a href="https://huasheng.ai" target="_blank" rel="noopener noreferrer">花生</a></span>
       </div>
-      <a href="https://github.com/alchaincyf/huasheng_editor"
-         target="_blank"
-         rel="noopener noreferrer"
-         class="github-link"
-         title="查看源码">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-        </svg>
-      </a>
+      <div class="header-actions">
+        <nav class="header-links">
+          <a class="header-link" href="https://www.bookai.top" target="_blank" rel="noopener noreferrer">BookAI 主站</a>
+          <a class="header-link primary" href="https://nf.video/o9jj0s" target="_blank" rel="noopener noreferrer">AI产品购买</a>
+        </nav>
+        <a href="https://github.com/alchaincyf/huasheng_editor"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="github-link"
+           title="查看源码">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+        </a>
+      </div>
     </header>
 
     <!-- 样式选择区 - 横向滚动 -->
@@ -1110,6 +1479,76 @@
             </div>
           </div>
         </div> -->
+      </div>
+    </div>
+
+    <!-- 右下角浮动广告 -->
+    <div v-if="floatingAd.isVisible" class="floating-ad">
+      <!-- 折叠状态 -->
+      <div v-if="!floatingAd.isExpanded" class="floating-ad__collapsed" @click="toggleFloatingAd">
+        <div class="floating-ad__collapsed-content">
+          <span class="floating-ad__collapsed-icon">{{ currentFloatingAd.icon }}</span>
+          <div class="floating-ad__collapsed-text">
+            <span class="floating-ad__collapsed-title">{{ currentFloatingAd.title }}</span>
+            <span class="floating-ad__collapsed-tag" :class="`floating-ad__tag--${currentFloatingAd.tagColor}`">
+              {{ currentFloatingAd.tag }}
+            </span>
+          </div>
+        </div>
+        <button class="floating-ad__close" @click.stop="closeFloatingAd" aria-label="关闭">
+          ×
+        </button>
+      </div>
+
+      <!-- 展开状态 -->
+      <div v-else class="floating-ad__panel">
+        <div class="floating-ad__panel-header">
+          <span class="floating-ad__panel-title">🔥 热门推荐</span>
+          <button class="floating-ad__collapse" @click="toggleFloatingAd" aria-label="收起">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="floating-ad__list">
+          <div
+            v-for="ad in floatingAd.ads"
+            :key="ad.id"
+            class="floating-ad__item"
+            @click="openFloatingAd(ad)"
+          >
+            <span class="floating-ad__icon">{{ ad.icon }}</span>
+            <div class="floating-ad__info">
+              <div class="floating-ad__header">
+                <span class="floating-ad__title">{{ ad.title }}</span>
+                <span class="floating-ad__tag" :class="`floating-ad__tag--${ad.tagColor}`">
+                  {{ ad.tag }}
+                </span>
+              </div>
+              <span class="floating-ad__subtitle">{{ ad.subtitle }}</span>
+              <span v-if="ad.coupon" class="floating-ad__coupon">优惠码: {{ ad.coupon }}</span>
+            </div>
+            <svg class="floating-ad__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </div>
+        </div>
+
+        <button class="floating-ad__close-expanded" @click="closeFloatingAd">
+          暂时不需要
+        </button>
+      </div>
+
+      <!-- 轮播指示器 -->
+      <div v-if="!floatingAd.isExpanded" class="floating-ad__indicators">
+        <span
+          v-for="(ad, idx) in floatingAd.ads"
+          :key="ad.id"
+          class="floating-ad__indicator"
+          :class="{ active: idx === floatingAd.currentIndex }"
+          @click.stop="setFloatingAdIndex(idx)"
+        ></span>
       </div>
     </div>
 

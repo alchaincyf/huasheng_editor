@@ -528,7 +528,45 @@ const editorApp = createApp({
       // 小红书相关
       previewMode: 'wechat',  // 预览模式：'wechat' 或 'xiaohongshu'
       xiaohongshuImages: [],  // 生成的小红书图片数组
-      xiaohongshuGenerating: false  // 是否正在生成小红书图片
+      xiaohongshuGenerating: false,  // 是否正在生成小红书图片
+      // 右下角浮动广告
+      floatingAd: {
+        ads: [
+          {
+            id: 'yinhe',
+            icon: '🎬',
+            title: '银河录像局',
+            subtitle: 'ChatGPT/Netflix/Claude 一站合租',
+            tag: '93折',
+            tagColor: 'orange',
+            link: 'https://nf.video/o9jj0s',
+            coupon: 'huasheng'
+          },
+          {
+            id: 'huanqiu',
+            icon: '🌍',
+            title: '环球巴士',
+            subtitle: 'ChatGPT Plus合租 35元/月',
+            tag: '热门',
+            tagColor: 'blue',
+            link: 'https://universalbus.cn/?s=5HCba2gPfO',
+            coupon: null
+          },
+          {
+            id: 'zsxq',
+            icon: '🔥',
+            title: 'AI编程知识星球',
+            subtitle: '1500+人已加入 / 限量30元券',
+            tag: '限时335元',
+            tagColor: 'purple',
+            link: 'https://t.zsxq.com/K3vsN',
+            coupon: '30元优惠券'
+          }
+        ],
+        isExpanded: false,
+        isVisible: false,
+        currentIndex: 0
+      }
     };
   },
 
@@ -538,6 +576,9 @@ const editorApp = createApp({
 
     // 加载用户偏好设置
     this.loadUserPreferences();
+
+    // 初始化浮动广告
+    this.initFloatingAd();
 
     // 初始化图片存储管理器
     this.imageStore = new ImageStore();
@@ -595,6 +636,25 @@ const editorApp = createApp({
     this.$nextTick(() => {
       this.renderMarkdown();
     });
+  },
+
+  beforeUnmount() {
+    this.stopFloatingAdRotation();
+  },
+
+  computed: {
+    currentFloatingAd() {
+      if (!this.floatingAd || !this.floatingAd.ads || this.floatingAd.ads.length === 0) {
+        return {
+          icon: '',
+          title: '',
+          tag: '',
+          tagColor: 'orange'
+        };
+      }
+
+      return this.floatingAd.ads[this.floatingAd.currentIndex] || this.floatingAd.ads[0];
+    }
   },
 
   watch: {
@@ -664,6 +724,83 @@ const editorApp = createApp({
         localStorage.setItem('markdownInput', this.markdownInput);
       } catch (error) {
         console.error('保存用户偏好失败:', error);
+      }
+    },
+
+    // 初始化浮动广告
+    initFloatingAd() {
+      let shouldShow = true;
+      try {
+        const closed = localStorage.getItem('floatingAdClosed');
+        if (closed) {
+          const closedTime = parseInt(closed, 10);
+          if (!Number.isNaN(closedTime)) {
+            shouldShow = Date.now() - closedTime >= 24 * 60 * 60 * 1000;
+          }
+        }
+      } catch (error) {
+        console.warn('读取浮动广告状态失败:', error);
+      }
+
+      if (!shouldShow) {
+        this.floatingAd.isVisible = false;
+        return;
+      }
+
+      setTimeout(() => {
+        this.floatingAd.isVisible = true;
+      }, 3000);
+
+      this.startFloatingAdRotation();
+    },
+
+    startFloatingAdRotation() {
+      if (this.floatingAdTimer) {
+        clearInterval(this.floatingAdTimer);
+      }
+
+      if (!this.floatingAd.ads || this.floatingAd.ads.length <= 1) {
+        return;
+      }
+
+      this.floatingAdTimer = setInterval(() => {
+        if (this.floatingAd.isVisible && !this.floatingAd.isExpanded) {
+          this.floatingAd.currentIndex = (this.floatingAd.currentIndex + 1) % this.floatingAd.ads.length;
+        }
+      }, 5000);
+    },
+
+    stopFloatingAdRotation() {
+      if (this.floatingAdTimer) {
+        clearInterval(this.floatingAdTimer);
+        this.floatingAdTimer = null;
+      }
+    },
+
+    toggleFloatingAd() {
+      this.floatingAd.isExpanded = !this.floatingAd.isExpanded;
+    },
+
+    closeFloatingAd() {
+      this.floatingAd.isVisible = false;
+      try {
+        localStorage.setItem('floatingAdClosed', Date.now().toString());
+      } catch (error) {
+        console.warn('保存浮动广告状态失败:', error);
+      }
+    },
+
+    openFloatingAd(ad) {
+      if (!ad || !ad.link) {
+        return;
+      }
+
+      window.open(ad.link, '_blank', 'noopener,noreferrer');
+    },
+
+    setFloatingAdIndex(index) {
+      if (index >= 0 && index < this.floatingAd.ads.length) {
+        this.floatingAd.currentIndex = index;
       }
     },
 
