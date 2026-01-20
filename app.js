@@ -566,7 +566,10 @@ const editorApp = createApp({
         isExpanded: false,
         isVisible: false,
         currentIndex: 0
-      }
+      },
+      // 文章历史记录
+      articleHistory: [],           // 历史文章列表
+      showHistoryPanel: false       // 侧边栏显示状态
     };
   },
 
@@ -576,6 +579,9 @@ const editorApp = createApp({
 
     // 加载用户偏好设置
     this.loadUserPreferences();
+
+    // 加载文章历史记录
+    this.loadArticleHistory();
 
     // 初始化浮动广告
     this.initFloatingAd();
@@ -1559,6 +1565,9 @@ const markdown = \`![图片](img://\${imageId})\`;
 
         this.copySuccess = true;
         this.showToast('复制成功', 'success');
+
+        // 自动保存到历史记录
+        this.saveToHistory();
 
         setTimeout(() => {
           this.copySuccess = false;
@@ -2629,6 +2638,195 @@ const markdown = \`![图片](img://\${imageId})\`;
       }
 
       this.showToast('批量下载完成', 'success');
+    },
+
+    // ==================== 文章历史记录功能 ====================
+
+    // 从 Markdown 内容提取标题
+    extractTitle(markdownContent) {
+      if (!markdownContent || !markdownContent.trim()) {
+        return '无标题';
+      }
+
+      // 尝试匹配第一个 # 标题
+      const titleMatch = markdownContent.match(/^#\s+(.+)$/m);
+      if (titleMatch && titleMatch[1]) {
+        // 清理标题中的 markdown 格式
+        let title = titleMatch[1].trim();
+        title = title.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '');
+        return title.substring(0, 50); // 最多 50 字符
+      }
+
+      // 如果没有标题，取前 20 个字符
+      const cleanContent = markdownContent
+        .replace(/^!\[.*?\]\(.*?\)$/gm, '') // 移除图片
+        .replace(/^#+\s*/gm, '') // 移除标题标记
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除链接格式
+        .replace(/[*_~`]/g, '') // 移除格式标记
+        .trim();
+
+      if (cleanContent) {
+        return cleanContent.substring(0, 20) + (cleanContent.length > 20 ? '...' : '');
+      }
+
+      return '无标题';
+    },
+
+    // 保存当前文章到历史记录
+    saveToHistory() {
+      const content = this.markdownInput;
+      if (!content || !content.trim()) {
+        this.showToast('内容为空，无法保存', 'error');
+        return;
+      }
+
+      const title = this.extractTitle(content);
+      const now = Date.now();
+
+      // 检查是否有相同内容的文章（去重）
+      const existingIndex = this.articleHistory.findIndex(
+        article => article.content.trim() === content.trim()
+      );
+
+      if (existingIndex !== -1) {
+        // 更新已存在的文章
+        this.articleHistory[existingIndex].title = title;
+        this.articleHistory[existingIndex].style = this.currentStyle;
+        this.articleHistory[existingIndex].updatedAt = now;
+
+        // 移到最前面
+        const article = this.articleHistory.splice(existingIndex, 1)[0];
+        this.articleHistory.unshift(article);
+      } else {
+        // 创建新文章
+        const newArticle = {
+          id: `article-${now}-${Math.random().toString(36).substring(2, 8)}`,
+          title: title,
+          content: content,
+          style: this.currentStyle,
+          createdAt: now,
+          updatedAt: now
+        };
+
+        // 添加到列表开头
+        this.articleHistory.unshift(newArticle);
+
+        // 限制最多 20 篇
+        if (this.articleHistory.length > 20) {
+          this.articleHistory = this.articleHistory.slice(0, 20);
+        }
+      }
+
+      // 保存到 localStorage
+      this.saveArticleHistory();
+      this.showToast('已保存到历史记录', 'success');
+    },
+
+    // 从历史记录加载文章
+    loadFromHistory(articleId) {
+      const article = this.articleHistory.find(a => a.id === articleId);
+      if (!article) {
+        this.showToast('文章不存在', 'error');
+        return;
+      }
+
+      // 恢复内容和样式
+      this.markdownInput = article.content;
+      if (article.style && STYLES[article.style]) {
+        this.currentStyle = article.style;
+      }
+
+      // 关闭侧边栏
+      this.showHistoryPanel = false;
+
+      this.showToast('已加载文章', 'success');
+    },
+
+    // 从历史记录删除文章
+    deleteFromHistory(articleId) {
+      const index = this.articleHistory.findIndex(a => a.id === articleId);
+      if (index === -1) {
+        this.showToast('文章不存在', 'error');
+        return;
+      }
+
+      this.articleHistory.splice(index, 1);
+      this.saveArticleHistory();
+      this.showToast('已删除', 'success');
+    },
+
+    // 从 localStorage 加载历史记录
+    loadArticleHistory() {
+      try {
+        const saved = localStorage.getItem('articleHistory');
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data && Array.isArray(data.articles)) {
+            this.articleHistory = data.articles;
+          }
+        }
+      } catch (error) {
+        console.error('加载历史记录失败:', error);
+        this.articleHistory = [];
+      }
+    },
+
+    // 保存历史记录到 localStorage
+    saveArticleHistory() {
+      try {
+        const data = {
+          articles: this.articleHistory
+        };
+        localStorage.setItem('articleHistory', JSON.stringify(data));
+      } catch (error) {
+        console.error('保存历史记录失败:', error);
+        this.showToast('保存历史记录失败', 'error');
+      }
+    },
+
+    // 切换历史记录侧边栏
+    toggleHistoryPanel() {
+      this.showHistoryPanel = !this.showHistoryPanel;
+    },
+
+    // 格式化历史记录时间显示
+    formatHistoryDate(timestamp) {
+      if (!timestamp) return '';
+
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+
+      // 不到 1 分钟
+      if (diff < 60 * 1000) {
+        return '刚刚';
+      }
+
+      // 不到 1 小时
+      if (diff < 60 * 60 * 1000) {
+        const minutes = Math.floor(diff / (60 * 1000));
+        return `${minutes} 分钟前`;
+      }
+
+      // 不到 24 小时
+      if (diff < 24 * 60 * 60 * 1000) {
+        const hours = Math.floor(diff / (60 * 60 * 1000));
+        return `${hours} 小时前`;
+      }
+
+      // 今年内
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+
+      if (year === now.getFullYear()) {
+        return `${month}-${day} ${hour}:${minute}`;
+      }
+
+      // 往年
+      return `${year}-${month}-${day}`;
     }
   }
 });
