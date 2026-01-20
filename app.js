@@ -569,7 +569,8 @@ const editorApp = createApp({
       },
       // 文章历史记录
       articleHistory: [],           // 历史文章列表
-      showHistoryPanel: false       // 侧边栏显示状态
+      showHistoryPanel: false,      // 侧边栏显示状态
+      currentArticleId: null        // 当前编辑的文章ID（用于防止重复保存）
     };
   },
 
@@ -671,7 +672,7 @@ const editorApp = createApp({
       // 保存样式偏好
       this.saveUserPreferences();
     },
-    markdownInput() {
+    markdownInput(newVal, oldVal) {
       if (this.md) {
         this.renderMarkdown();
       }
@@ -680,6 +681,15 @@ const editorApp = createApp({
       this._saveTimeout = setTimeout(() => {
         this.saveUserPreferences();
       }, 1000); // 1秒后保存
+
+      // 当内容被清空时，重置当前文章ID（下次保存会创建新文章）
+      if (!newVal || !newVal.trim()) {
+        this.currentArticleId = null;
+      }
+      // 当从空内容粘贴大量内容时，也视为新文章
+      else if ((!oldVal || oldVal.trim().length < 10) && newVal.trim().length > 100) {
+        this.currentArticleId = null;
+      }
     }
   },
 
@@ -2683,38 +2693,49 @@ const markdown = \`![图片](img://\${imageId})\`;
       const title = this.extractTitle(content);
       const now = Date.now();
 
-      // 检查是否有相同内容的文章（去重）
-      const existingIndex = this.articleHistory.findIndex(
-        article => article.content.trim() === content.trim()
-      );
+      // 如果有当前文章ID，直接更新该文章
+      if (this.currentArticleId) {
+        const existingIndex = this.articleHistory.findIndex(
+          article => article.id === this.currentArticleId
+        );
 
-      if (existingIndex !== -1) {
-        // 更新已存在的文章
-        this.articleHistory[existingIndex].title = title;
-        this.articleHistory[existingIndex].style = this.currentStyle;
-        this.articleHistory[existingIndex].updatedAt = now;
+        if (existingIndex !== -1) {
+          // 更新已存在的文章
+          this.articleHistory[existingIndex].title = title;
+          this.articleHistory[existingIndex].content = content;
+          this.articleHistory[existingIndex].style = this.currentStyle;
+          this.articleHistory[existingIndex].updatedAt = now;
 
-        // 移到最前面
-        const article = this.articleHistory.splice(existingIndex, 1)[0];
-        this.articleHistory.unshift(article);
-      } else {
-        // 创建新文章
-        const newArticle = {
-          id: `article-${now}-${Math.random().toString(36).substring(2, 8)}`,
-          title: title,
-          content: content,
-          style: this.currentStyle,
-          createdAt: now,
-          updatedAt: now
-        };
+          // 移到最前面
+          const article = this.articleHistory.splice(existingIndex, 1)[0];
+          this.articleHistory.unshift(article);
 
-        // 添加到列表开头
-        this.articleHistory.unshift(newArticle);
-
-        // 限制最多 20 篇
-        if (this.articleHistory.length > 20) {
-          this.articleHistory = this.articleHistory.slice(0, 20);
+          this.saveArticleHistory();
+          this.showToast('已更新历史记录', 'success');
+          return;
         }
+      }
+
+      // 没有当前文章ID，创建新文章
+      const newArticleId = `article-${now}-${Math.random().toString(36).substring(2, 8)}`;
+      const newArticle = {
+        id: newArticleId,
+        title: title,
+        content: content,
+        style: this.currentStyle,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      // 添加到列表开头
+      this.articleHistory.unshift(newArticle);
+
+      // 设置为当前文章
+      this.currentArticleId = newArticleId;
+
+      // 限制最多 20 篇
+      if (this.articleHistory.length > 20) {
+        this.articleHistory = this.articleHistory.slice(0, 20);
       }
 
       // 保存到 localStorage
@@ -2735,6 +2756,9 @@ const markdown = \`![图片](img://\${imageId})\`;
       if (article.style && STYLES[article.style]) {
         this.currentStyle = article.style;
       }
+
+      // 设置当前文章ID，后续编辑会更新这篇文章
+      this.currentArticleId = articleId;
 
       // 关闭侧边栏
       this.showHistoryPanel = false;
