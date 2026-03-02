@@ -1479,8 +1479,25 @@ const markdown = \`![图片](img://\${imageId})\`;
           let successCount = 0;
           let failCount = 0;
 
+          let gifCount = 0;
+
           for (const img of Array.from(images)) {
             try {
+              // 检测 GIF：跳过并替换为提示信息
+              const isGif = await this.isGifImage(img);
+              if (isGif) {
+                gifCount++;
+                const placeholder = doc.createElement('p');
+                placeholder.setAttribute('style',
+                  'background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; ' +
+                  'padding: 12px 16px; color: #856404; font-size: 14px; text-align: center; ' +
+                  'margin: 16px 0; line-height: 1.6;'
+                );
+                placeholder.textContent = '⚠️ 此处为 GIF 动图，无法直接复制到公众号排版，请在公众号编辑器中重新上传。';
+                img.parentNode.replaceChild(placeholder, img);
+                continue;
+              }
+
               const base64 = await this.convertImageToBase64(img);
               img.setAttribute('src', base64);
               successCount++;
@@ -1489,6 +1506,10 @@ const markdown = \`![图片](img://\${imageId})\`;
               failCount++;
               // 失败时保持原URL
             }
+          }
+
+          if (gifCount > 0) {
+            this.showToast(`${gifCount} 张 GIF 动图已替换为提示，请在公众号中重新上传`, 'warning');
           }
 
           if (failCount > 0) {
@@ -1650,17 +1671,31 @@ const markdown = \`![图片](img://\${imageId})\`;
       }
     },
 
-    // 复制时压缩图片：GIF 提取首帧，大图二次压缩
-    async compressForClipboard(blob, mimeType) {
-      // GIF > 500KB：提取第一帧转为静态图
-      if (mimeType === 'image/gif' && blob.size > 500 * 1024) {
+    // 判断图片是否为 GIF（通过 IndexedDB 记录或 src 后缀判断）
+    async isGifImage(imgElement) {
+      const imageId = imgElement.getAttribute('data-image-id');
+      if (imageId && this.imageStore) {
         try {
-          return await this.extractGifFirstFrame(blob);
+          const record = await withTimeout(
+            this.imageStore.getImageRecord(imageId),
+            3000,
+            'GIF 检测超时'
+          );
+          if (record) {
+            const mime = record.mimeType || (record.blob && record.blob.type) || '';
+            if (mime === 'image/gif') return true;
+          }
         } catch (e) {
-          console.warn('GIF 首帧提取失败，尝试二次压缩:', e);
+          console.warn('GIF 检测失败:', e);
         }
       }
-      // 大图 > 1MB：二次压缩
+      // 后备：通过 src 后缀判断
+      const src = (imgElement.getAttribute('src') || '').toLowerCase();
+      return src.endsWith('.gif') || src.includes('.gif?');
+    },
+
+    // 复制时压缩大图（>1MB 二次压缩）
+    async compressForClipboard(blob, mimeType) {
       if (blob.size > 1024 * 1024) {
         try {
           return await this.recompressForClipboard(blob);
@@ -1668,54 +1703,7 @@ const markdown = \`![图片](img://\${imageId})\`;
           console.warn('二次压缩失败，使用原图:', e);
         }
       }
-      // 小图直接返回
       return blob;
-    },
-
-    // 提取 GIF 第一帧为静态 JPEG
-    async extractGifFirstFrame(blob) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(blob);
-        img.onload = () => {
-          try {
-            const maxWidth = 1200;
-            let w = img.naturalWidth;
-            let h = img.naturalHeight;
-            if (w > maxWidth) {
-              h = Math.round(h * (maxWidth / w));
-              w = maxWidth;
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, w, h);
-            ctx.drawImage(img, 0, 0, w, h);
-            canvas.toBlob(
-              (result) => {
-                URL.revokeObjectURL(url);
-                if (result) {
-                  resolve(result);
-                } else {
-                  reject(new Error('Canvas toBlob 返回 null'));
-                }
-              },
-              'image/jpeg',
-              0.85
-            );
-          } catch (e) {
-            URL.revokeObjectURL(url);
-            reject(e);
-          }
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          reject(new Error('GIF 图片加载失败'));
-        };
-        img.src = url;
-      });
     },
 
     // 二次压缩大图（质量 0.6，最大 1200x1200）
