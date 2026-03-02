@@ -137,6 +137,33 @@ class ImageStore {
     });
   }
 
+  // 获取完整图片记录（blob + 元数据，用于 GIF 判断等）
+  async getImageRecord(id) {
+    if (!this.db) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readonly');
+      const objectStore = transaction.objectStore(this.storeName);
+      const request = objectStore.get(id);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result) {
+          resolve(result);
+        } else {
+          resolve(null);
+        }
+      };
+
+      request.onerror = () => {
+        console.error('读取图片记录失败:', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
   // 删除图片
   async deleteImage(id) {
     if (!this.db) {
@@ -501,6 +528,29 @@ function isCjkLetter(charCode) {
     (charCode >= 0xFF61 && charCode <= 0xFF9F) ||  // Half-width Katakana
     (charCode >= 0xFFA0 && charCode <= 0xFFDC)     // Full-width Latin letters
   );
+}
+
+function isCjkPunctuation(charCode) {
+  if (!charCode || charCode < 0) {
+    return false;
+  }
+
+  return (
+    (charCode >= 0x3000 && charCode <= 0x303F) ||  // CJK 标点符号（。、，；：！？等）
+    (charCode >= 0xFF01 && charCode <= 0xFF0F) ||  // 全角标点（！＂＃等）
+    (charCode >= 0xFF1A && charCode <= 0xFF20) ||  // 全角标点（：；等）
+    (charCode >= 0xFF3B && charCode <= 0xFF40) ||  // 全角标点（［＼等）
+    (charCode >= 0xFF5B && charCode <= 0xFF65) ||  // 全角标点（｛｜等）
+    (charCode >= 0xFE10 && charCode <= 0xFE1F) ||  // 竖排标点变体
+    (charCode >= 0xFE30 && charCode <= 0xFE6F)     // CJK 兼容标点（小写变体）
+  );
+}
+
+function withTimeout(promise, ms, message = '操作超时') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
+  ]);
 }
 
 const editorApp = createApp({
@@ -1421,7 +1471,7 @@ const markdown = \`![图片](img://\${imageId})\`;
         // 将图片网格转换为 table 布局（公众号兼容）
         this.convertGridToTable(doc);
 
-        // 处理图片：转为 Base64
+        // 处理图片：转为 Base64（串行处理，降低内存峰值）
         const images = doc.querySelectorAll('img');
         if (images.length > 0) {
           this.showToast(`正在处理 ${images.length} 张图片...`, 'success');
@@ -1429,7 +1479,7 @@ const markdown = \`![图片](img://\${imageId})\`;
           let successCount = 0;
           let failCount = 0;
 
-          const imagePromises = Array.from(images).map(async (img) => {
+          for (const img of Array.from(images)) {
             try {
               const base64 = await this.convertImageToBase64(img);
               img.setAttribute('src', base64);
@@ -1439,9 +1489,7 @@ const markdown = \`![图片](img://\${imageId})\`;
               failCount++;
               // 失败时保持原URL
             }
-          });
-
-          await Promise.all(imagePromises);
+          }
 
           if (failCount > 0) {
             this.showToast(`图片处理完成：${successCount} 成功，${failCount} 失败（保留原链接）`, 'error');
@@ -1563,27 +1611,186 @@ const markdown = \`![图片](img://\${imageId})\`;
         const simplifiedHTML = doc.body.innerHTML;
         const plainText = doc.body.textContent || '';
 
-        const htmlBlob = new Blob([simplifiedHTML], { type: 'text/html' });
-        const textBlob = new Blob([plainText], { type: 'text/plain' });
+        // 检查焦点：异步处理图片后窗口可能失焦
+        if (document.hasFocus()) {
+          const htmlBlob = new Blob([simplifiedHTML], { type: 'text/html' });
+          const textBlob = new Blob([plainText], { type: 'text/plain' });
 
-        const clipboardItem = new ClipboardItem({
-          'text/html': htmlBlob,
-          'text/plain': textBlob
-        });
+          const clipboardItem = new ClipboardItem({
+            'text/html': htmlBlob,
+            'text/plain': textBlob
+          });
 
-        await navigator.clipboard.write([clipboardItem]);
+          await navigator.clipboard.write([clipboardItem]);
 
-        this.copySuccess = true;
-        this.showToast('复制成功', 'success');
+          this.copySuccess = true;
+          this.showToast('复制成功', 'success');
 
-        // 自动保存到历史记录
-        this.saveToHistory();
+          // 自动保存到历史记录
+          this.saveToHistory();
 
-        setTimeout(() => {
-          this.copySuccess = false;
-        }, 2000);
+          setTimeout(() => {
+            this.copySuccess = false;
+          }, 2000);
+        } else {
+          // 焦点丢失，降级到 execCommand
+          console.warn('窗口失焦，使用降级复制方案');
+          this.clipboardFallback(simplifiedHTML);
+        }
       } catch (error) {
         console.error('复制失败:', error);
+        // 尝试降级方案
+        try {
+          const fallbackHTML = doc ? doc.body.innerHTML : this.renderedContent;
+          this.clipboardFallback(fallbackHTML);
+        } catch (fallbackError) {
+          console.error('降级复制也失败:', fallbackError);
+          this.showToast('复制失败', 'error');
+        }
+      }
+    },
+
+    // 复制时压缩图片：GIF 提取首帧，大图二次压缩
+    async compressForClipboard(blob, mimeType) {
+      // GIF > 500KB：提取第一帧转为静态图
+      if (mimeType === 'image/gif' && blob.size > 500 * 1024) {
+        try {
+          return await this.extractGifFirstFrame(blob);
+        } catch (e) {
+          console.warn('GIF 首帧提取失败，尝试二次压缩:', e);
+        }
+      }
+      // 大图 > 1MB：二次压缩
+      if (blob.size > 1024 * 1024) {
+        try {
+          return await this.recompressForClipboard(blob);
+        } catch (e) {
+          console.warn('二次压缩失败，使用原图:', e);
+        }
+      }
+      // 小图直接返回
+      return blob;
+    },
+
+    // 提取 GIF 第一帧为静态 JPEG
+    async extractGifFirstFrame(blob) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
+        img.onload = () => {
+          try {
+            const maxWidth = 1200;
+            let w = img.naturalWidth;
+            let h = img.naturalHeight;
+            if (w > maxWidth) {
+              h = Math.round(h * (maxWidth / w));
+              w = maxWidth;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob(
+              (result) => {
+                URL.revokeObjectURL(url);
+                if (result) {
+                  resolve(result);
+                } else {
+                  reject(new Error('Canvas toBlob 返回 null'));
+                }
+              },
+              'image/jpeg',
+              0.85
+            );
+          } catch (e) {
+            URL.revokeObjectURL(url);
+            reject(e);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('GIF 图片加载失败'));
+        };
+        img.src = url;
+      });
+    },
+
+    // 二次压缩大图（质量 0.6，最大 1200x1200）
+    async recompressForClipboard(blob) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
+        img.onload = () => {
+          try {
+            const maxDim = 1200;
+            let w = img.naturalWidth;
+            let h = img.naturalHeight;
+            const ratio = Math.min(maxDim / w, maxDim / h, 1);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob(
+              (result) => {
+                URL.revokeObjectURL(url);
+                if (result && result.size < blob.size) {
+                  resolve(result);
+                } else {
+                  resolve(blob); // 压缩后更大则用原图
+                }
+              },
+              'image/jpeg',
+              0.6
+            );
+          } catch (e) {
+            URL.revokeObjectURL(url);
+            reject(e);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('图片加载失败'));
+        };
+        img.src = url;
+      });
+    },
+
+    // 剪贴板降级方案：使用 execCommand('copy')
+    clipboardFallback(html) {
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        tempDiv.setAttribute('style', 'position:fixed;left:-9999px;top:-9999px;opacity:0;');
+        document.body.appendChild(tempDiv);
+
+        const range = document.createRange();
+        range.selectNodeContents(tempDiv);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        const success = document.execCommand('copy');
+        selection.removeAllRanges();
+        document.body.removeChild(tempDiv);
+
+        if (success) {
+          this.copySuccess = true;
+          this.showToast('复制成功（降级模式）', 'success');
+          this.saveToHistory();
+          setTimeout(() => { this.copySuccess = false; }, 2000);
+        } else {
+          this.showToast('复制失败', 'error');
+        }
+      } catch (e) {
+        console.error('降级复制也失败:', e);
         this.showToast('复制失败', 'error');
       }
     },
@@ -1600,19 +1807,29 @@ const markdown = \`![图片](img://\${imageId})\`;
       const imageId = imgElement.getAttribute('data-image-id');
       if (imageId && this.imageStore) {
         try {
-          // 从 IndexedDB 获取图片 Blob
-          const blob = await this.imageStore.getImageBlob(imageId);
+          // 从 IndexedDB 获取完整记录（含 mimeType），加 8s 超时
+          const record = await withTimeout(
+            this.imageStore.getImageRecord(imageId),
+            8000,
+            `IndexedDB 读取超时: ${imageId}`
+          );
 
-          if (blob) {
+          if (record && record.blob) {
+            // 复制前压缩：GIF 降级首帧，大图二次压缩
+            const processedBlob = await this.compressForClipboard(
+              record.blob,
+              record.mimeType || record.blob.type || 'image/jpeg'
+            );
+
             // 将 Blob 转为 Base64
             return new Promise((resolve, reject) => {
               const reader = new FileReader();
               reader.onloadend = () => resolve(reader.result);
               reader.onerror = (error) => reject(new Error('FileReader failed: ' + error));
-              reader.readAsDataURL(blob);
+              reader.readAsDataURL(processedBlob);
             });
           } else {
-            console.warn(`图片 Blob 不存在: ${imageId}`);
+            console.warn(`图片记录不存在: ${imageId}`);
             // 继续尝试用 fetch 方式（兜底）
           }
         } catch (error) {
@@ -1621,12 +1838,17 @@ const markdown = \`![图片](img://\${imageId})\`;
         }
       }
 
-      // 后备方案：尝试通过 URL 获取图片
+      // 后备方案：尝试通过 URL 获取图片（加 AbortController 超时）
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
         const response = await fetch(src, {
           mode: 'cors',
-          cache: 'default'
+          cache: 'default',
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1641,7 +1863,7 @@ const markdown = \`![图片](img://\${imageId})\`;
           reader.readAsDataURL(blob);
         });
       } catch (error) {
-        // CORS或网络错误时，抛出错误让外层处理
+        // CORS、网络或超时错误时，抛出错误让外层处理
         throw new Error(`图片加载失败 (${src}): ${error.message}`);
       }
     },
@@ -1758,6 +1980,17 @@ const markdown = \`![图片](img://\${imageId})\`;
           }
           if (!isNextWhiteSpace && !isNextPunctChar && isCjkLetter(nextChar)) {
             isNextPunctChar = true;
+          }
+        }
+
+        // 修复 * 标记：CJK 标点（如中文逗号、句号）不应阻止加粗闭合
+        // 例如 **提示词妙招，** 中的 "，" 是 CJK 标点，不应视为 ASCII 标点
+        if (marker === 0x2A /* * */) {
+          if (isLastPunctChar && isCjkPunctuation(lastChar) && !utils.isMdAsciiPunct(lastChar)) {
+            isLastPunctChar = false;
+          }
+          if (isNextPunctChar && isCjkPunctuation(nextChar) && !utils.isMdAsciiPunct(nextChar)) {
+            isNextPunctChar = false;
           }
         }
 
