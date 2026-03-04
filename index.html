@@ -511,6 +511,19 @@
       background: #00C853;
     }
 
+    .copy-btn-x {
+      background: #1d9bf0;
+    }
+
+    .copy-btn-x:hover {
+      background: #1a8cd8;
+      opacity: 1;
+    }
+
+    .copy-btn-x.success {
+      background: #00C853;
+    }
+
     .preview-content {
       flex: 1;
       overflow-y: auto;
@@ -1203,6 +1216,11 @@
         padding: var(--space-xs) var(--space-sm);
       }
 
+      .copy-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+
       .preview-panel {
         height: auto;
       }
@@ -1719,6 +1737,14 @@
                 <path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
               </svg>
               <span class="save-btn-text">保存</span>
+            </button>
+            <button
+              class="copy-btn copy-btn-x"
+              :class="{ success: copyXSuccess }"
+              :disabled="!renderedContent"
+              @click="copyToXArticles"
+            >
+              {{ copyXSuccess ? '✓ 已复制' : '复制到 X' }}
             </button>
             <button
               class="copy-btn"

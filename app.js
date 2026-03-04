@@ -620,7 +620,8 @@ const editorApp = createApp({
       // 文章历史记录
       articleHistory: [],           // 历史文章列表
       showHistoryPanel: false,      // 侧边栏显示状态
-      currentArticleId: null        // 当前编辑的文章ID（用于防止重复保存）
+      currentArticleId: null,       // 当前编辑的文章ID（用于防止重复保存）
+      copyXSuccess: false            // 复制到 X 成功状态
     };
   },
 
@@ -1669,6 +1670,205 @@ const markdown = \`![图片](img://\${imageId})\`;
           this.showToast('复制失败', 'error');
         }
       }
+    },
+
+    // 复制到 X Articles（纯净语义化 HTML）
+    async copyToXArticles() {
+      if (!this.renderedContent) return;
+
+      try {
+        this.showToast('正在准备 X Articles 格式...', 'processing');
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(this.renderedContent, 'text/html');
+
+        this.sanitizeForXArticles(doc);
+
+        const html = doc.body.innerHTML;
+        const plainText = doc.body.innerText || doc.body.textContent || '';
+
+        if (document.hasFocus()) {
+          const blob = new Blob([html], { type: 'text/html' });
+          const textBlob = new Blob([plainText], { type: 'text/plain' });
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': blob,
+              'text/plain': textBlob
+            })
+          ]);
+
+          this.copyXSuccess = true;
+          this.showToast('已复制 X Articles 格式', 'success');
+          this.saveToHistory();
+
+          setTimeout(() => {
+            this.copyXSuccess = false;
+          }, 2000);
+        } else {
+          console.warn('窗口失焦，使用降级复制方案');
+          this.clipboardFallbackX(html);
+        }
+      } catch (error) {
+        console.error('复制到 X 失败:', error);
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(this.renderedContent, 'text/html');
+          this.sanitizeForXArticles(doc);
+          this.clipboardFallbackX(doc.body.innerHTML);
+        } catch (fallbackError) {
+          console.error('降级复制也失败:', fallbackError);
+          this.showToast('复制失败', 'error');
+        }
+      }
+    },
+
+    // X Articles 降级复制
+    clipboardFallbackX(html) {
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        tempDiv.setAttribute('style', 'position:fixed;left:-9999px;top:-9999px;opacity:0;');
+        document.body.appendChild(tempDiv);
+
+        const range = document.createRange();
+        range.selectNodeContents(tempDiv);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        const success = document.execCommand('copy');
+        selection.removeAllRanges();
+        document.body.removeChild(tempDiv);
+
+        if (success) {
+          this.copyXSuccess = true;
+          this.showToast('已复制 X Articles 格式（降级模式）', 'success');
+          this.saveToHistory();
+          setTimeout(() => { this.copyXSuccess = false; }, 2000);
+        } else {
+          this.showToast('复制失败', 'error');
+        }
+      } catch (e) {
+        console.error('降级复制也失败:', e);
+        this.showToast('复制失败', 'error');
+      }
+    },
+
+    // 清洗 HTML 为 X Articles 兼容格式
+    sanitizeForXArticles(doc) {
+      // X Articles 白名单标签
+      const ALLOWED_TAGS = new Set([
+        'h2', 'h3', 'p', 'strong', 'em', 'del', 'a',
+        'ul', 'ol', 'li', 'blockquote', 'br', 'b', 'i', 's'
+      ]);
+
+      // 1. h1 → h2（X Articles 的 H1 保留给文章标题）
+      doc.querySelectorAll('h1').forEach(h1 => {
+        const h2 = doc.createElement('h2');
+        h2.innerHTML = h1.innerHTML;
+        h1.parentNode.replaceChild(h2, h1);
+      });
+
+      // 2. h4/h5/h6 → h3（仅支持 H2 和 H3）
+      doc.querySelectorAll('h4, h5, h6').forEach(h => {
+        const h3 = doc.createElement('h3');
+        h3.innerHTML = h.innerHTML;
+        h.parentNode.replaceChild(h3, h);
+      });
+
+      // 3. 代码块 → blockquote（不支持 pre/code）
+      //    匹配代码块容器（div 包含 code 或 pre）
+      doc.querySelectorAll('div[style*="border-radius"], pre').forEach(block => {
+        const codeEl = block.querySelector('code') || block;
+        const codeText = codeEl.textContent || codeEl.innerText || '';
+        const bq = doc.createElement('blockquote');
+        const lines = codeText.split('\n');
+        lines.forEach((line, i) => {
+          if (i > 0) bq.appendChild(doc.createElement('br'));
+          bq.appendChild(doc.createTextNode(line || '\u00A0'));
+        });
+        block.parentNode.replaceChild(bq, block);
+      });
+
+      // 4. table → blockquote 管道符分隔文本
+      doc.querySelectorAll('table').forEach(table => {
+        const bq = doc.createElement('blockquote');
+        const rows = table.querySelectorAll('tr');
+        rows.forEach((row, ri) => {
+          if (ri > 0) {
+            bq.appendChild(doc.createElement('br'));
+          }
+          const cells = row.querySelectorAll('th, td');
+          const cellTexts = Array.from(cells).map(c => (c.textContent || '').trim());
+          bq.appendChild(doc.createTextNode('| ' + cellTexts.join(' | ') + ' |'));
+        });
+        table.parentNode.replaceChild(bq, table);
+      });
+
+      // 5. img → 占位符（不支持 img 标签粘贴）
+      doc.querySelectorAll('img').forEach(img => {
+        const p = doc.createElement('p');
+        const alt = img.getAttribute('alt') || '图片';
+        p.textContent = `[${alt}]`;
+        // 如果 img 在 p 内，替换整个 p
+        const parent = img.parentNode;
+        if (parent && parent.tagName === 'P') {
+          parent.parentNode.replaceChild(p, parent);
+        } else {
+          img.parentNode.replaceChild(p, img);
+        }
+      });
+
+      // 6. hr → 分隔符文本
+      doc.querySelectorAll('hr').forEach(hr => {
+        const p = doc.createElement('p');
+        p.textContent = '———';
+        hr.parentNode.replaceChild(p, hr);
+      });
+
+      // 7. 移除所有 style/class 属性，解包非白名单标签
+      const cleanNode = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) return;
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+        // 递归处理子节点（从后向前遍历，避免修改导致跳过）
+        const children = Array.from(node.childNodes);
+        children.forEach(child => cleanNode(child));
+
+        const tag = node.tagName.toLowerCase();
+
+        // 移除所有属性（保留 href）
+        if (tag !== 'a') {
+          while (node.attributes.length > 0) {
+            node.removeAttribute(node.attributes[0].name);
+          }
+        } else {
+          // a 标签只保留 href
+          const href = node.getAttribute('href');
+          while (node.attributes.length > 0) {
+            node.removeAttribute(node.attributes[0].name);
+          }
+          if (href) node.setAttribute('href', href);
+        }
+
+        // 解包非白名单标签（保留内容）
+        if (!ALLOWED_TAGS.has(tag) && tag !== 'body') {
+          const fragment = doc.createDocumentFragment();
+          while (node.firstChild) {
+            fragment.appendChild(node.firstChild);
+          }
+          node.parentNode.replaceChild(fragment, node);
+        }
+      };
+
+      cleanNode(doc.body);
+
+      // 8. 清理空的 blockquote/p
+      doc.querySelectorAll('blockquote, p').forEach(el => {
+        if (!el.textContent.trim() && !el.querySelector('br, img')) {
+          el.remove();
+        }
+      });
     },
 
     // 判断图片是否为 GIF（通过 IndexedDB 记录或 src 后缀判断）
