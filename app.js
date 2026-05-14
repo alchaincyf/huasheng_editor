@@ -1118,7 +1118,10 @@ const markdown = \`![图片](img://\${imageId})\`;
           }
 
           const currentStyle = el.getAttribute('style') || '';
-          el.setAttribute('style', currentStyle + '; ' + style[selector]);
+          const newStyle = currentStyle
+            ? (currentStyle + '; ' + style[selector])
+            : style[selector];
+          el.setAttribute('style', newStyle);
         });
       });
 
@@ -1143,7 +1146,10 @@ const markdown = \`![图片](img://\${imageId})\`;
             .replace(/padding:\s*[^;]+;?/gi, '')
             .replace(/;\s*;/g, ';')
             .trim();
-          node.setAttribute('style', sanitizedStyle + '; ' + override);
+          const newInlineStyle = sanitizedStyle
+            ? (sanitizedStyle + '; ' + override)
+            : override;
+          node.setAttribute('style', newInlineStyle);
         });
       });
 
