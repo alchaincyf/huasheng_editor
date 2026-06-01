@@ -80,8 +80,6 @@
       grid-template-columns: 1fr 1fr;
       grid-template-rows: auto auto 1fr;
       height: 100vh;
-      max-width: 1600px;
-      margin: 0 auto;
       background: var(--color-surface);
     }
 
@@ -485,6 +483,54 @@
       stroke-width: 2;
     }
 
+    .gif-switch {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      color: var(--color-secondary);
+      white-space: nowrap;
+    }
+
+    .gif-switch__input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .gif-switch__track {
+      position: relative;
+      width: 34px;
+      height: 18px;
+      border-radius: 9px;
+      background: var(--color-border);
+      transition: background 160ms;
+      flex: none;
+    }
+
+    .gif-switch__track.on {
+      background: var(--color-accent);
+    }
+
+    .gif-switch__thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      transition: transform 160ms;
+    }
+
+    .gif-switch__track.on .gif-switch__thumb {
+      transform: translateX(16px);
+    }
+
     .copy-btn {
       padding: 6px 16px;
       background: var(--color-primary);
@@ -529,6 +575,8 @@
       overflow-y: auto;
       background: var(--color-surface);
       position: relative;
+      /* 两侧自适应留白：窄屏也不让内容顶到边，宽屏维持原有间距 */
+      padding: 0 clamp(24px, 6%, 80px);
     }
 
     .preview-container {
@@ -542,6 +590,17 @@
     .preview-container.layout-mode img {
       cursor: pointer;
       transition: all 120ms;
+    }
+
+    /* 左右联动：跳转时高亮对应块 */
+    .preview-container .source-flash {
+      animation: sourceFlash 800ms ease-out;
+      border-radius: 4px;
+    }
+
+    @keyframes sourceFlash {
+      0% { box-shadow: 0 0 0 3px rgba(255, 189, 46, 0.55); }
+      100% { box-shadow: 0 0 0 3px rgba(255, 189, 46, 0); }
     }
 
     .preview-container.layout-mode img:hover {
@@ -1627,6 +1686,7 @@
       <div class="editor-panel">
         <div class="markdown-input-container">
           <textarea
+            ref="editorTextarea"
             v-model="markdownInput"
             class="markdown-input"
             :class="{ 'drag-over': isDraggingOver }"
@@ -1738,6 +1798,22 @@
               </svg>
               <span class="save-btn-text">保存</span>
             </button>
+            <label
+              v-if="hasGif"
+              class="gif-switch"
+              title="是否把 GIF 动图一起复制到公众号&#10;&#10;开启：GIF 以动图形式复制（公众号在多数情况下会保留动画）。&#10;关闭：GIF 替换为文字提示，需在公众号里手动重新上传。&#10;&#10;之所以有这个开关：base64 GIF 粘进公众号不一定能保住动画，所以做成可切换，按需选择。"
+            >
+              <span>含 GIF</span>
+              <span class="gif-switch__track" :class="{ on: includeGif }">
+                <span class="gif-switch__thumb"></span>
+              </span>
+              <input
+                type="checkbox"
+                class="gif-switch__input"
+                :checked="includeGif"
+                @change="toggleIncludeGif"
+              >
+            </label>
             <button
               class="copy-btn copy-btn-x"
               :class="{ success: copyXSuccess }"
@@ -1758,7 +1834,7 @@
         </div>
 
         <!-- 公众号预览模式 -->
-        <div class="preview-content">
+        <div class="preview-content" ref="previewScroll">
           <div v-if="!renderedContent" class="empty-state">
             <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

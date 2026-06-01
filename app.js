@@ -561,6 +561,8 @@ const editorApp = createApp({
       currentStyle: 'wechat-default',
       copySuccess: false,
       starredStyles: [],
+      includeGif: true,  // 复制时是否包含 GIF（默认包含；关闭则替换为占位提示）
+      hasGif: false,     // 当前内容是否含 GIF（仅此时显示「含 GIF」开关）
       toast: {
         show: false,
         message: '',
@@ -629,6 +631,9 @@ const editorApp = createApp({
     // 加载星标样式
     this.loadStarredStyles();
 
+    // 加载「含 GIF」开关偏好
+    this.loadIncludeGif();
+
     // 加载用户偏好设置
     this.loadUserPreferences();
 
@@ -687,12 +692,26 @@ const editorApp = createApp({
       }
     });
 
+    // 为块级元素注入源码行号（左右联动用）。注意不覆盖 fence/code_block，否则会丢掉代码高亮
+    const addSourceLine = (tokens, idx, options, env, slf) => {
+      const token = tokens[idx];
+      if (token.map && token.map.length) {
+        token.attrSet('data-source-line', String(token.map[0]));
+      }
+      return slf.renderToken(tokens, idx, options);
+    };
+    ['paragraph_open', 'heading_open', 'blockquote_open', 'bullet_list_open',
+      'ordered_list_open', 'table_open', 'hr'].forEach((rule) => {
+      md.renderer.rules[rule] = addSourceLine;
+    });
+
     this.patchMarkdownScanner(md);
     this.md = md;
 
     // 手动触发一次渲染（确保初始内容显示）
     this.$nextTick(() => {
       this.renderMarkdown();
+      this.initScrollSync();
     });
   },
 
@@ -755,6 +774,27 @@ const editorApp = createApp({
         console.error('加载星标样式失败:', error);
         this.starredStyles = [];
       }
+    },
+
+    loadIncludeGif() {
+      try {
+        const saved = localStorage.getItem('includeGif');
+        if (saved !== null) {
+          this.includeGif = saved === 'true';
+        }
+      } catch (error) {
+        console.error('加载含 GIF 偏好失败:', error);
+      }
+    },
+
+    toggleIncludeGif() {
+      this.includeGif = !this.includeGif;
+      try {
+        localStorage.setItem('includeGif', String(this.includeGif));
+      } catch (error) {
+        console.error('保存含 GIF 偏好失败:', error);
+      }
+      this.showToast(this.includeGif ? '复制时将包含 GIF 动图' : '复制时 GIF 将替换为提示', 'success');
     },
 
     // 加载用户偏好设置（样式和内容）
@@ -965,6 +1005,7 @@ const markdown = \`![图片](img://\${imageId})\`;
     async renderMarkdown() {
       if (!this.markdownInput.trim()) {
         this.renderedContent = '';
+        this.hasGif = false;
         return;
       }
 
@@ -987,6 +1028,194 @@ const markdown = \`![图片](img://\${imageId})\`;
       html = this.applyInlineStyles(html);
 
       this.renderedContent = html;
+
+      // 异步检测内容是否含 GIF（决定是否显示「含 GIF」开关），不阻塞渲染
+      this.detectHasGif();
+    },
+
+    // 检测当前内容是否含 GIF：URL 后缀 + IndexedDB mimeType（按 imageId 记忆，避免重复读库）
+    async detectHasGif() {
+      // URL 形式的 .gif 直接命中
+      if (/\.gif(\?|"|'|\)|\s|$)/i.test(this.markdownInput)) {
+        this.hasGif = true;
+        return;
+      }
+
+      if (!this.renderedContent || !this.imageStore) {
+        this.hasGif = false;
+        return;
+      }
+
+      this._gifIdCache = this._gifIdCache || {};
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(this.renderedContent, 'text/html');
+      const imgs = doc.querySelectorAll('img[data-image-id]');
+
+      let found = false;
+      for (const img of imgs) {
+        const id = img.getAttribute('data-image-id');
+        if (this._gifIdCache[id] === undefined) {
+          try {
+            const record = await withTimeout(
+              this.imageStore.getImageRecord(id),
+              3000,
+              'GIF 检测超时'
+            );
+            const mime = record ? (record.mimeType || (record.blob && record.blob.type) || '') : '';
+            this._gifIdCache[id] = mime === 'image/gif';
+          } catch (e) {
+            this._gifIdCache[id] = false;
+          }
+        }
+        if (this._gifIdCache[id]) { found = true; break; }
+      }
+      this.hasGif = found;
+    },
+
+    // ===== 左右联动：滚动同步 + 点击跳转 =====
+    initScrollSync() {
+      const ta = this.$refs.editorTextarea;
+      const pv = this.$refs.previewScroll;
+      if (!ta || !pv) return;
+
+      this._syncLock = false;
+      // scroll 同步：加锁防止两侧互相触发死循环
+      ta.addEventListener('scroll', () => {
+        if (this._syncLock) return;
+        this._syncLock = true;
+        this.syncPreviewToEditor();
+        requestAnimationFrame(() => { this._syncLock = false; });
+      });
+      pv.addEventListener('scroll', () => {
+        if (this._syncLock) return;
+        this._syncLock = true;
+        this.syncEditorToPreview();
+        requestAnimationFrame(() => { this._syncLock = false; });
+      });
+
+      // 点击/移动光标 → 预览跳转
+      ta.addEventListener('click', () => this.jumpPreviewToCaret());
+      ta.addEventListener('keyup', (e) => {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          this.jumpPreviewToCaret();
+        }
+      });
+      // 点击预览 → 编辑器跳转
+      pv.addEventListener('click', (e) => this.jumpEditorFromPreview(e));
+    },
+
+    // 预览中所有带源码行号的元素，按行号排序
+    sourceLineEls() {
+      const pv = this.$refs.previewScroll;
+      if (!pv) return [];
+      return Array.from(pv.querySelectorAll('[data-source-line]'))
+        .map((el) => ({ line: parseInt(el.getAttribute('data-source-line'), 10), el }))
+        .filter((o) => !isNaN(o.line))
+        .sort((a, b) => a.line - b.line);
+    },
+
+    totalSourceLines() {
+      return Math.max(1, (this.markdownInput.match(/\n/g) || []).length + 1);
+    },
+
+    // 元素相对滚动容器的顶部偏移
+    elTopInScroll(el, container) {
+      return el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+    },
+
+    // 给定源码行号 → 预览容器目标 scrollTop（相邻锚点插值）
+    previewScrollForLine(line) {
+      const pv = this.$refs.previewScroll;
+      const els = this.sourceLineEls();
+      if (!els.length) return 0;
+      let lo = els[0];
+      let hi = null;
+      for (const o of els) {
+        if (o.line <= line) lo = o;
+        else { hi = o; break; }
+      }
+      const loTop = this.elTopInScroll(lo.el, pv);
+      if (!hi) return Math.max(0, loTop - 12);
+      const hiTop = this.elTopInScroll(hi.el, pv);
+      const frac = (line - lo.line) / Math.max(1, hi.line - lo.line);
+      return Math.max(0, loTop + frac * (hiTop - loTop) - 12);
+    },
+
+    syncPreviewToEditor() {
+      const ta = this.$refs.editorTextarea;
+      const pv = this.$refs.previewScroll;
+      const denom = ta.scrollHeight - ta.clientHeight;
+      const ratio = denom > 0 ? ta.scrollTop / denom : 0;
+      const topLine = ratio * this.totalSourceLines();
+      pv.scrollTop = this.previewScrollForLine(topLine);
+    },
+
+    syncEditorToPreview() {
+      const ta = this.$refs.editorTextarea;
+      const pv = this.$refs.previewScroll;
+      const els = this.sourceLineEls();
+      if (!els.length) return;
+      // 找到滚动到顶部的锚点元素
+      let top = els[0];
+      for (const o of els) {
+        if (this.elTopInScroll(o.el, pv) <= pv.scrollTop + 6) top = o;
+        else break;
+      }
+      const denom = ta.scrollHeight - ta.clientHeight;
+      ta.scrollTop = (top.line / this.totalSourceLines()) * denom;
+    },
+
+    caretSourceLine() {
+      const ta = this.$refs.editorTextarea;
+      const pos = ta.selectionStart || 0;
+      return (this.markdownInput.slice(0, pos).match(/\n/g) || []).length;
+    },
+
+    lineStartOffset(line) {
+      const lines = this.markdownInput.split('\n');
+      let off = 0;
+      for (let i = 0; i < line && i < lines.length; i++) off += lines[i].length + 1;
+      return off;
+    },
+
+    jumpPreviewToCaret() {
+      const pv = this.$refs.previewScroll;
+      if (!pv) return;
+      const line = this.caretSourceLine();
+      this._syncLock = true;
+      pv.scrollTo({ top: this.previewScrollForLine(line), behavior: 'smooth' });
+      clearTimeout(this._syncUnlock);
+      this._syncUnlock = setTimeout(() => { this._syncLock = false; }, 260);
+      // 高亮对应块
+      const els = this.sourceLineEls();
+      let match = els.length ? els[0] : null;
+      for (const o of els) {
+        if (o.line <= line) match = o;
+        else break;
+      }
+      if (match) this.flashSourceEl(match.el);
+    },
+
+    jumpEditorFromPreview(e) {
+      const node = e.target.closest('[data-source-line]');
+      if (!node) return;
+      const line = parseInt(node.getAttribute('data-source-line'), 10);
+      if (isNaN(line)) return;
+      const ta = this.$refs.editorTextarea;
+      const offset = this.lineStartOffset(line);
+      this._syncLock = true;
+      ta.focus();
+      ta.setSelectionRange(offset, offset);
+      const denom = ta.scrollHeight - ta.clientHeight;
+      ta.scrollTop = (line / this.totalSourceLines()) * denom;
+      clearTimeout(this._syncUnlock);
+      this._syncUnlock = setTimeout(() => { this._syncLock = false; }, 260);
+      this.flashSourceEl(node);
+    },
+
+    flashSourceEl(el) {
+      el.classList.add('source-flash');
+      setTimeout(() => el.classList.remove('source-flash'), 800);
     },
 
     preprocessMarkdown(content) {
@@ -1484,9 +1713,9 @@ const markdown = \`![图片](img://\${imageId})\`;
 
           for (const img of Array.from(images)) {
             try {
-              // 检测 GIF：跳过并替换为提示信息
+              // 检测 GIF：开关关闭时跳过并替换为提示信息；开启时正常转 base64 保留动画
               const isGif = await this.isGifImage(img);
-              if (isGif) {
+              if (isGif && !this.includeGif) {
                 gifCount++;
                 const placeholder = doc.createElement('p');
                 placeholder.setAttribute('style',
@@ -1896,6 +2125,10 @@ const markdown = \`![图片](img://\${imageId})\`;
 
     // 复制时压缩大图（>1MB 二次压缩）
     async compressForClipboard(blob, mimeType) {
+      // GIF 不走 JPEG 二次压缩，否则会被压成静态首帧、丢失动画
+      if (mimeType === 'image/gif' || blob.type === 'image/gif') {
+        return blob;
+      }
       if (blob.size > 1024 * 1024) {
         try {
           return await this.recompressForClipboard(blob);
