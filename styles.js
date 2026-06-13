@@ -525,6 +525,36 @@ const STYLES = {
     }
   },
 
+  // 复刻「翻箱」档案皮肤：暖纸点阵底纹 + 衬线标题 + 陶土橙/橄榄/琥珀
+  'warm-dossier': {
+    name: '档案馆',
+    styles: {
+      container: 'max-width: 700px; margin: 0 auto; padding: 24px 22px 44px 22px; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 1.85 !important; color: #1a1a18 !important; background-color: #f5f0e8 !important; background-image: radial-gradient(rgba(140,110,70,0.06) 1px, transparent 1px); background-size: 4px 4px; word-wrap: break-word; letter-spacing: 0.005em;',
+      h1: 'font-size: 28px; font-weight: 700; color: #1a1a18 !important; line-height: 1.35 !important; margin: 40px 0 18px; padding-bottom: 12px; border-bottom: 2px solid #cc785c; font-family: Fraunces, Georgia, "Songti SC", "STSong", serif; letter-spacing: 0.01em;',
+      h2: 'font-size: 22px; font-weight: 700; color: #cc785c !important; line-height: 1.4 !important; margin: 36px 0 16px; padding: 2px 0 2px 14px; border-left: 4px solid #cc785c; font-family: Fraunces, Georgia, "Songti SC", "STSong", serif;',
+      h3: 'font-size: 19px; font-weight: 600; color: #1a1a18 !important; line-height: 1.45 !important; margin: 30px 0 12px; padding-bottom: 6px; border-bottom: 1px dashed #a39882; font-family: Fraunces, Georgia, "Songti SC", "STSong", serif;',
+      h4: 'font-size: 17px; font-weight: 600; color: #6b6355 !important; line-height: 1.5 !important; margin: 24px 0 10px; font-family: Fraunces, Georgia, "Songti SC", "STSong", serif;',
+      h5: 'font-size: 15px; font-weight: 600; color: #6b6355 !important; line-height: 1.5 !important; margin: 20px 0 8px;',
+      h6: 'font-size: 14px; font-weight: 600; color: #a39882 !important; line-height: 1.5 !important; margin: 18px 0 8px; letter-spacing: 0.08em; text-transform: uppercase;',
+      p: 'margin: 18px 0 !important; line-height: 1.85 !important; color: #1a1a18 !important; font-size: 16px;',
+      strong: 'font-weight: 700; color: #cc785c !important; background-color: rgba(204,120,92,0.10) !important; padding: 1px 4px; border-radius: 3px;',
+      em: 'font-style: italic; color: #6b6355 !important;',
+      a: 'color: #cc785c !important; text-decoration: none; border-bottom: 1px dotted #cc785c;',
+      ul: 'margin: 18px 0; padding-left: 28px;',
+      ol: 'margin: 18px 0; padding-left: 28px;',
+      li: 'margin: 8px 0; line-height: 1.85 !important; color: #1a1a18 !important;',
+      blockquote: 'margin: 22px 0; padding: 14px 18px; background-color: #faf6ef !important; border: 1px solid #e3d9c8; border-left: 3px solid #cc785c; color: #6b6355 !important; font-size: 15px; line-height: 1.7 !important; border-radius: 0 6px 6px 0;',
+      code: 'font-family: "SF Mono", Menlo, Consolas, Monaco, monospace; font-size: 14px; padding: 2px 6px; background-color: rgba(204,120,92,0.10) !important; color: #cc785c !important; border: 1px solid #e3d9c8; border-radius: 4px;',
+      pre: 'margin: 24px 0; padding: 18px 20px; background-color: #2e2a23 !important; color: #f1ebdf !important; border-radius: 8px; overflow-x: auto; line-height: 1.65 !important; box-shadow: 0 6px 20px rgba(90,66,42,0.18);',
+      hr: 'margin: 40px auto; border: none; height: 2px; background: repeating-linear-gradient(to right, #cc785c 0, #cc785c 4px, transparent 4px, transparent 8px); max-width: 180px;',
+      img: 'max-width: 100%; max-height: 560px !important; height: auto; display: block; margin: 24px auto; border-radius: 8px; border: 1px solid #e3d9c8; box-shadow: 0 6px 20px rgba(90,66,42,0.12);',
+      table: 'width: 100%; margin: 24px 0; border-collapse: collapse; font-size: 15px;',
+      th: 'background-color: #ece2d2 !important; padding: 10px 14px; text-align: left; border: 1px solid #e3d9c8; font-weight: 700; color: #1a1a18 !important; font-family: Fraunces, Georgia, "Songti SC", "STSong", serif;',
+      td: 'padding: 10px 14px; border: 1px solid #e3d9c8; color: #1a1a18 !important; background-color: #faf6ef !important;',
+      tr: 'border-bottom: 1px solid #e3d9c8;',
+    }
+  },
+
   'lemonde': {
     name: 'Le Monde 世界报',
     styles: {

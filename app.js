@@ -1376,6 +1376,14 @@ const markdown = \`![图片](img://\${imageId})\`;
         });
       });
 
+      // 修复首行顶部多余空隙：首个块级元素的上外边距与容器 padding 不折叠，
+      // 会让正文像凭空多了一行空行（晚点等大 margin 标题尤其明显）。这里把首元素上边距归零。
+      const firstBlock = doc.body.firstElementChild;
+      if (firstBlock) {
+        const fs = firstBlock.getAttribute('style') || '';
+        firstBlock.setAttribute('style', fs + '; margin-top: 0 !important;');
+      }
+
       const container = doc.createElement('div');
       container.setAttribute('style', style.container);
       container.innerHTML = doc.body.innerHTML;
