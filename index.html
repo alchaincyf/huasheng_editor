@@ -1626,8 +1626,11 @@
       </div>
       <div class="header-actions">
         <nav class="header-links">
+          <!-- 宣传链接已暂时注释关闭；需恢复时取消下方注释即可 -->
+          <!--
           <a class="header-link" href="https://www.bookai.top" target="_blank" rel="noopener noreferrer">BookAI 主站</a>
           <a class="header-link primary" href="https://nf.video/o9jj0s" target="_blank" rel="noopener noreferrer">AI产品购买</a>
+          -->
         </nav>
         <a href="https://github.com/alchaincyf/huasheng_editor"
            target="_blank"
@@ -1941,9 +1944,10 @@
     <!-- 侧边栏遮罩层 -->
     <div class="history-overlay" :class="{ visible: showHistoryPanel }" @click="toggleHistoryPanel"></div>
 
-    <!-- 右下角浮动广告 -->
+    <!-- 右下角浮动广告（已暂时注释关闭；需恢复时取消本块外层注释即可） -->
+    <!-- AD-DISABLED-START
     <div v-if="floatingAd.isVisible" class="floating-ad">
-      <!-- 折叠状态 -->
+      折叠状态
       <div v-if="!floatingAd.isExpanded" class="floating-ad__collapsed" @click="toggleFloatingAd">
         <div class="floating-ad__collapsed-content">
           <span class="floating-ad__collapsed-icon">{{ currentFloatingAd.icon }}</span>
@@ -1959,7 +1963,7 @@
         </button>
       </div>
 
-      <!-- 展开状态 -->
+      展开状态
       <div v-else class="floating-ad__panel">
         <div class="floating-ad__panel-header">
           <span class="floating-ad__panel-title">🔥 热门推荐</span>
@@ -1999,7 +2003,7 @@
         </button>
       </div>
 
-      <!-- 轮播指示器 -->
+      轮播指示器
       <div v-if="!floatingAd.isExpanded" class="floating-ad__indicators">
         <span
           v-for="(ad, idx) in floatingAd.ads"
@@ -2010,6 +2014,7 @@
         ></span>
       </div>
     </div>
+    AD-DISABLED-END -->
 
     <!-- Toast 提示 -->
     <div v-if="toast.show" class="toast" :class="toast.type">
