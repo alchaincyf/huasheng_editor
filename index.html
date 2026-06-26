@@ -608,6 +608,118 @@
       outline-offset: 2px;
     }
 
+    .preview-container [data-code-block-id]:hover {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    .code-block-style-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .code-block-style-panel {
+      width: min(520px, 100%);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+      padding: 20px;
+    }
+
+    .code-block-style-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .code-block-style-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .code-block-style-close {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 6px;
+      background: var(--color-bg);
+      color: var(--color-secondary);
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .code-block-style-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .code-block-style-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .code-block-style-row label {
+      font-size: 13px;
+      color: var(--color-secondary);
+      font-weight: 500;
+    }
+
+    .code-block-style-row input,
+    .code-block-style-row select {
+      width: 100%;
+      height: 34px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      background: var(--color-surface);
+      color: var(--color-primary);
+      font-size: 13px;
+    }
+
+    .code-block-style-row input[type="color"] {
+      padding: 3px;
+      cursor: pointer;
+    }
+
+    .code-block-style-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .code-block-style-actions button {
+      padding: 8px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      background: var(--color-surface);
+      color: var(--color-primary);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .code-block-style-actions .primary {
+      background: var(--color-primary);
+      color: var(--color-surface);
+      border-color: var(--color-primary);
+    }
+
+    .code-block-style-actions .secondary {
+      background: var(--color-bg);
+    }
+
     /* 图片控制面板 */
     .image-control-panel {
       background: white;
@@ -1848,6 +1960,59 @@
           <div v-else class="preview-container" v-html="renderedContent"></div>
         </div>
 
+        <div v-if="showCodeBlockPanel && codeBlockDraft" class="code-block-style-overlay" @click.self="closeCodeBlockPanel">
+          <div class="code-block-style-panel">
+            <div class="code-block-style-header">
+              <h3>代码块标题样式</h3>
+              <button class="code-block-style-close" @click="closeCodeBlockPanel" aria-label="关闭">×</button>
+            </div>
+
+            <div class="code-block-style-form">
+              <div class="code-block-style-row">
+                <label>标题类型</label>
+                <select v-model="codeBlockDraft.titleType">
+                  <option value="macos">macOS 三色圆点</option>
+                  <option value="text">文字标题</option>
+                </select>
+              </div>
+
+              <template v-if="codeBlockDraft.titleType === 'text'">
+                <div class="code-block-style-row">
+                  <label>标题文字</label>
+                  <input type="text" v-model="codeBlockDraft.titleText" placeholder="例如：JavaScript">
+                </div>
+                <div class="code-block-style-row">
+                  <label>标题字体</label>
+                  <input type="text" v-model="codeBlockDraft.titleFontFamily" placeholder="字体族">
+                </div>
+                <div class="code-block-style-row">
+                  <label>标题字号</label>
+                  <input type="number" min="10" max="28" v-model.number="codeBlockDraft.titleFontSize">
+                </div>
+                <div class="code-block-style-row">
+                  <label>标题颜色</label>
+                  <input type="color" v-model="codeBlockDraft.titleColor">
+                </div>
+              </template>
+
+              <div class="code-block-style-row">
+                <label>标题背景</label>
+                <input type="color" v-model="codeBlockDraft.titleBackgroundColor">
+              </div>
+              <div class="code-block-style-row">
+                <label>代码背景</label>
+                <input type="color" v-model="codeBlockDraft.codeBackgroundColor">
+              </div>
+            </div>
+
+            <div class="code-block-style-actions">
+              <button class="secondary" @click="resetActiveCodeBlockStyle">恢复默认</button>
+              <button @click="applyCodeBlockStyle('all')">应用到全部</button>
+              <button class="primary" @click="applyCodeBlockStyle('single')">应用到当前</button>
+            </div>
+          </div>
+        </div>
+
         <!-- 小红书预览模式（已隐藏） -->
         <!-- <div v-if="previewMode === 'xiaohongshu'" class="xiaohongshu-preview">
           <div class="xiaohongshu-controls">
@@ -2024,6 +2189,7 @@
 
   <!-- 加载脚本 -->
   <script src="styles.js?v=2"></script>
+  <script src="style-modules.js?v=1"></script>
   <script src="app.js?v=2"></script>
 </body>
 </html>

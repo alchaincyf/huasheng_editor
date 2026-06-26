@@ -577,6 +577,11 @@ const editorApp = createApp({
       imageStore: null,  // 图片存储管理器（IndexedDB）
       imageCompressor: null,  // 图片压缩器
       imageIdToObjectURL: {},  // 图片 ID 到 Object URL 的映射（用于预览时替换）
+      codeBlockGlobalStyle: STYLE_MODULES.codeBlock.defaults,
+      codeBlockStyles: {},
+      activeCodeBlockId: null,
+      codeBlockDraft: null,
+      showCodeBlockPanel: false,
       // 小红书相关
       previewMode: 'wechat',  // 预览模式：'wechat' 或 'xiaohongshu'
       xiaohongshuImages: [],  // 生成的小红书图片数组
@@ -637,6 +642,9 @@ const editorApp = createApp({
     // 加载用户偏好设置
     this.loadUserPreferences();
 
+    // 加载代码块样式偏好
+    this.loadCodeBlockStylePreferences();
+
     // 加载文章历史记录
     this.loadArticleHistory();
 
@@ -664,14 +672,12 @@ const editorApp = createApp({
     this.initTurndownService();
 
     // 初始化 markdown-it
+    const vm = this;
     const md = window.markdownit({
       html: true,
       linkify: true,
       typographer: false,  // 禁用 typographer 以避免智能引号干扰加粗标记
       highlight: function (str, lang) {
-        // macOS 风格的窗口装饰
-        const dots = '<div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #2a2c33; border-bottom: 1px solid #1e1f24;"><span style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f56;"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #27c93f;"></span></div>';
-
         // 检查 hljs 是否加载
         let codeContent = '';
         if (lang && typeof hljs !== 'undefined') {
@@ -688,7 +694,10 @@ const editorApp = createApp({
           codeContent = md.utils.escapeHtml(str);
         }
 
-        return `<div style="margin: 20px 0; border-radius: 8px; overflow: hidden; background: #383a42; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">${dots}<div style="padding: 16px; overflow-x: auto; background: #383a42;"><code style="display: block; color: #abb2bf; font-family: 'SF Mono', Monaco, 'Cascadia Code', Consolas, monospace; font-size: 14px; line-height: 1.6; white-space: pre;">${codeContent}</code></div></div>`;
+        const codeBlockIndex = vm._codeBlockRenderIndex || 0;
+        const codeBlockId = `code-block-${STYLE_MODULES.codeBlock.hash(`${lang || ''}\n${str}`)}-${codeBlockIndex}`;
+        vm._codeBlockRenderIndex = codeBlockIndex + 1;
+        return vm.buildCodeBlockHtml(codeContent, codeBlockId, lang);
       }
     });
 
@@ -1018,6 +1027,8 @@ const markdown = \`![图片](img://\${imageId})\`;
       // 预处理 Markdown
       const processedContent = this.preprocessMarkdown(this.markdownInput);
 
+      this._codeBlockRenderIndex = 0;
+
       // 渲染
       let html = this.md.render(processedContent);
 
@@ -1031,6 +1042,103 @@ const markdown = \`![图片](img://\${imageId})\`;
 
       // 异步检测内容是否含 GIF（决定是否显示「含 GIF」开关），不阻塞渲染
       this.detectHasGif();
+    },
+
+    normalizeCodeBlockStyle(style = {}) {
+      return STYLE_MODULES.codeBlock.normalize(style, this.codeBlockGlobalStyle);
+    },
+
+    getCodeBlockStyle(codeBlockId) {
+      return this.normalizeCodeBlockStyle(this.codeBlockStyles[codeBlockId]);
+    },
+
+    buildCodeBlockHtml(codeContent, codeBlockId, lang = '') {
+      return STYLE_MODULES.codeBlock.buildPreviewHtml({
+        codeContent,
+        codeBlockId,
+        lang,
+        style: this.getCodeBlockStyle(codeBlockId)
+      });
+    },
+
+    loadCodeBlockStylePreferences() {
+      try {
+        const globalStyle = localStorage.getItem('codeBlockGlobalStyle');
+        if (globalStyle) {
+          this.codeBlockGlobalStyle = this.normalizeCodeBlockStyle(JSON.parse(globalStyle));
+        }
+
+        const blockStyles = localStorage.getItem('codeBlockStyles');
+        if (blockStyles) {
+          this.codeBlockStyles = JSON.parse(blockStyles) || {};
+        }
+      } catch (error) {
+        console.error('加载代码块样式失败:', error);
+      }
+    },
+
+    saveCodeBlockStylePreferences() {
+      try {
+        localStorage.setItem('codeBlockGlobalStyle', JSON.stringify(this.codeBlockGlobalStyle));
+        localStorage.setItem('codeBlockStyles', JSON.stringify(this.codeBlockStyles));
+      } catch (error) {
+        console.error('保存代码块样式失败:', error);
+      }
+    },
+
+    handlePreviewClick(e) {
+      const codeBlock = e.target.closest('[data-code-block-id]');
+      if (codeBlock) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.openCodeBlockPanel(codeBlock.getAttribute('data-code-block-id'));
+        return;
+      }
+
+      this.jumpEditorFromPreview(e);
+    },
+
+    openCodeBlockPanel(codeBlockId) {
+      this.activeCodeBlockId = codeBlockId;
+      this.codeBlockDraft = this.getCodeBlockStyle(codeBlockId);
+      this.showCodeBlockPanel = true;
+    },
+
+    closeCodeBlockPanel() {
+      this.showCodeBlockPanel = false;
+      this.activeCodeBlockId = null;
+      this.codeBlockDraft = null;
+    },
+
+    applyCodeBlockStyle(scope = 'single') {
+      if (!this.codeBlockDraft) return;
+      const nextStyle = this.normalizeCodeBlockStyle(this.codeBlockDraft);
+
+      if (scope === 'all') {
+        this.codeBlockGlobalStyle = nextStyle;
+        this.codeBlockStyles = {};
+        this.showToast('已应用到全部代码块', 'success');
+      } else if (this.activeCodeBlockId) {
+        this.codeBlockStyles = {
+          ...this.codeBlockStyles,
+          [this.activeCodeBlockId]: nextStyle
+        };
+        this.showToast('已应用到当前代码块', 'success');
+      }
+
+      this.saveCodeBlockStylePreferences();
+      this.renderMarkdown();
+    },
+
+    resetActiveCodeBlockStyle() {
+      if (!this.activeCodeBlockId) return;
+      const nextStyles = { ...this.codeBlockStyles };
+      delete nextStyles[this.activeCodeBlockId];
+      this.codeBlockStyles = nextStyles;
+      this.codeBlockDraft = this.getCodeBlockStyle(this.activeCodeBlockId);
+      this.saveCodeBlockStylePreferences();
+      this.renderMarkdown();
+      this.showToast('已恢复当前代码块默认样式', 'success');
     },
 
     // 检测当前内容是否含 GIF：URL 后缀 + IndexedDB mimeType（按 imageId 记忆，避免重复读库）
@@ -1100,8 +1208,8 @@ const markdown = \`![图片](img://\${imageId})\`;
           this.jumpPreviewToCaret();
         }
       });
-      // 点击预览 → 编辑器跳转
-      pv.addEventListener('click', (e) => this.jumpEditorFromPreview(e));
+      // 点击预览：代码块打开样式面板，其他内容跳转到编辑器
+      pv.addEventListener('click', (e) => this.handlePreviewClick(e));
     },
 
     // 预览中所有带源码行号的元素，按行号排序
@@ -1801,38 +1909,17 @@ const markdown = \`![图片](img://\${imageId})\`;
         }
 
         // 代码块简化
-        const codeBlocks = doc.querySelectorAll('div[style*="border-radius: 8px"]');
+        const codeBlocks = doc.querySelectorAll('[data-code-block-id]');
         codeBlocks.forEach(block => {
           const codeElement = block.querySelector('code');
           if (codeElement) {
             const codeText = codeElement.textContent || codeElement.innerText;
-            const pre = doc.createElement('pre');
-            const code = doc.createElement('code');
-
-            pre.setAttribute('style',
-              'background: linear-gradient(to bottom, #2a2c33 0%, #383a42 8px, #383a42 100%);' +
-              'padding: 0;' +
-              'border-radius: 6px;' +
-              'overflow: hidden;' +
-              'margin: 24px 0;' +
-              'box-shadow: 0 2px 8px rgba(0,0,0,0.15);'
-            );
-
-            code.setAttribute('style',
-              'color: #abb2bf;' +
-              'font-family: "SF Mono", Consolas, Monaco, "Courier New", monospace;' +
-              'font-size: 14px;' +
-              'line-height: 1.7;' +
-              'display: block;' +
-              'white-space: pre;' +
-              'padding: 16px 20px;' +
-              '-webkit-font-smoothing: antialiased;' +
-              '-moz-osx-font-smoothing: grayscale;'
-            );
-
-            code.textContent = codeText;
-            pre.appendChild(code);
-            block.parentNode.replaceChild(pre, block);
+            const codeBlockId = block.getAttribute('data-code-block-id');
+            const wrapper = STYLE_MODULES.codeBlock.buildCopyNode(doc, {
+              codeText,
+              style: this.getCodeBlockStyle(codeBlockId)
+            });
+            block.parentNode.replaceChild(wrapper, block);
           }
         });
 
