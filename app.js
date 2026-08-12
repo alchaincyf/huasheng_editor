@@ -669,6 +669,14 @@ const editorApp = createApp({
       linkify: true,
       typographer: false,  // 禁用 typographer 以避免智能引号干扰加粗标记
       highlight: function (str, lang) {
+        // Mermaid 图表：highlight 是同步的，而 mermaid 渲染是异步的，
+        // 这里只放占位容器（带 data-source 源码），交由 processMermaid 异步渲染
+        if (lang && lang.toLowerCase() === 'mermaid') {
+          const renderId = 'm-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+          const encoded = encodeURIComponent(str);
+          return `<div class="mermaid-wrapper" data-mermaid="1" style="margin: 20px 0; text-align: center; background: #fafafa; border: 1px solid #ececec; border-radius: 6px; padding: 16px; overflow-x: auto;"><div class="mermaid" data-source="${encoded}" data-render-id="${renderId}" style="display: inline-block; min-height: 40px; color: #999; font-size: 13px;">图表渲染中…</div></div>`;
+        }
+
         // macOS 风格的窗口装饰
         const dots = '<div style="display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #2a2c33; border-bottom: 1px solid #1e1f24;"><span style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f56;"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #27c93f;"></span></div>';
 
@@ -1024,6 +1032,12 @@ const markdown = \`![图片](img://\${imageId})\`;
       // 处理 img:// 协议（从 IndexedDB 加载图片）
       html = await this.processImageProtocol(html);
 
+      // 渲染 Mermaid 图表（异步，把 highlight 放的占位符替换为 SVG）
+      html = await this.processMermaid(html);
+
+      // 渲染数学公式（把 preprocessMarkdown 提取的占位 token 替换为 MathJax SVG）
+      html = await this.processMath(html);
+
       // 应用样式
       html = this.applyInlineStyles(html);
 
@@ -1219,6 +1233,22 @@ const markdown = \`![图片](img://\${imageId})\`;
     },
 
     preprocessMarkdown(content) {
+      // 提取数学公式（$...$ / \\[...\\] 块级，$...$ / \\(...\\) 行内），
+      // 替换为占位 token，避免 markdown-it 把公式里的 _ * ^ 等解析为强调/斜体。
+      // token 仅含字母数字与 @，不会触发任何 markdown 语法。
+      this._mathTokens = [];
+      const stash = (tex, type) => {
+        const id = this._mathTokens.length;
+        this._mathTokens.push({ type, tex: tex.replace(/^\s+|\s+$/g, '') });
+        return type === 'block' ? '@@MATHBLOCK' + id + '@@' : '@@MATHINLINE' + id + '@@';
+      };
+      // 块级优先（$ 在 $ 之前，避免 $x$ 被当成两个 $...$）
+      content = content.replace(/\$\$([\s\S]+?)\$\$/g, (m, t) => '\n\n' + stash(t, 'block') + '\n\n');
+      content = content.replace(/\\\[([\s\S]+?)\\\]/g, (m, t) => '\n\n' + stash(t, 'block') + '\n\n');
+      // 行内 $...$（排除 \\$ 转义）与 \\(...\\)
+      content = content.replace(/(?<!\\)\$([^\$\n]+?)\$/g, (m, t) => stash(t, 'inline'));
+      content = content.replace(/\\\(([\s\S]+?)\\\)/g, (m, t) => stash(t, 'inline'));
+
       // 规范化水平分割线格式（修复从飞书等复制时的解析问题）
       // 匹配 * * *、- - -、_ _ _ 等格式（包括带空格的变体）
       // 确保它们被正确解析为 <hr> 而非无序列表
@@ -1307,6 +1337,402 @@ const markdown = \`![图片](img://\${imageId})\`;
       return doc.body.innerHTML;
     },
 
+    // 异步渲染 Mermaid 图表（highlight 只能放占位符，此处真正渲染为 SVG）
+    // 数学公式：把 preprocessMarkdown 提取的占位 token 替换为 MathJax 渲染的 SVG
+    async processMath(html) {
+      if (!this._mathTokens || !this._mathTokens.length) return html;
+      if (!window.__mathjaxReady) {
+        await new Promise((resolve) => {
+          window.addEventListener('mathjax-ready', resolve, { once: true });
+        });
+      }
+      const MJ = window.MathJax;
+      if (!MJ || !MJ.tex2svg) {
+        console.warn('MathJax 未加载，跳过公式渲染');
+        return html;
+      }
+      const st = (STYLES[this.currentStyle] || STYLES['wechat-default']).styles;
+      const textColor = this._mermaidColor(st.p, 'color') || '#3f3f3f';
+
+      const rendered = {};
+      for (let i = 0; i < this._mathTokens.length; i++) {
+        const { type, tex } = this._mathTokens[i];
+        try {
+          const out = MJ.tex2svg(tex, { display: type === 'block' });
+          const svg = out.querySelector('svg');
+          if (svg) {
+            svg.setAttribute('data-math-svg', '1');
+            svg.setAttribute('style', 'color: ' + textColor + ';');
+            rendered[i] = { type, svgStr: new XMLSerializer().serializeToString(svg) };
+          }
+        } catch (e) {
+          console.warn('公式渲染失败:', tex, e);
+        }
+      }
+
+      for (const iStr of Object.keys(rendered)) {
+        const r = rendered[iStr];
+        if (r.type === 'block') {
+          const token = '@@MATHBLOCK' + iStr + '@@';
+          const blockHtml = '<div class="math-block" data-math="1" style="text-align: center; margin: 16px 0; overflow-x: auto;">' + r.svgStr + '</div>';
+          const pRe = new RegExp('<p[^>]*>\\s*' + token + '\\s*</p>', 'g');
+          if (pRe.test(html)) {
+            html = html.replace(pRe, blockHtml);
+          } else {
+            html = html.split(token).join(blockHtml);
+          }
+        } else {
+          const token = '@@MATHINLINE' + iStr + '@@';
+          const inlineHtml = '<span class="math-inline" data-math="1" style="vertical-align: middle; display: inline-block;">' + r.svgStr + '</span>';
+          html = html.split(token).join(inlineHtml);
+        }
+      }
+      return html;
+    },
+
+    // MathJax SVG → PNG base64（MathJax 输出为自包含 path，无 foreignObject）
+    async mathSvgToPng(svgEl, scale = 4) {
+      const clone = svgEl.cloneNode(true);
+      // MathJax SVG 的 width/height 用 ex 相对单位、viewBox 是内部大坐标系，
+      // 都不能直接当像素。临时挂到 live DOM 测量自然渲染尺寸（ex→px 需布局）。
+      const holder = document.createElement('div');
+      holder.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;line-height:0;';
+      holder.appendChild(clone);
+      document.body.appendChild(holder);
+      let w = clone.getBoundingClientRect().width;
+      let h = clone.getBoundingClientRect().height;
+      document.body.removeChild(holder);
+      // 兜底：用 viewBox 宽高比 + 默认尺寸
+      if (!w || !h) {
+        const vb = svgEl.getAttribute('viewBox');
+        let vw = 0, vh = 0;
+        if (vb) { const p = vb.split(/[\s,]+/); if (p.length === 4) { vw = parseFloat(p[2]); vh = parseFloat(p[3]); } }
+        if (vw && vh) { w = 200; h = 200 * vh / vw; } else { w = 200; h = 40; }
+      }
+      const color = (svgEl.getAttribute('style') || '').match(/color:\s*(#[0-9a-fA-F]{3,8})/);
+      if (color) clone.setAttribute('style', 'color: ' + color[1] + ';');
+      clone.setAttribute('width', String(w));
+      clone.setAttribute('height', String(h));
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      const svgData = new XMLSerializer().serializeToString(clone);
+      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+      const img = new Image();
+      img.src = url;
+      // 等图像就绪：decode() 解析完成才放行（onload 仅资源就绪，光栅化未必完成）。
+      try {
+        await img.decode();
+      } catch (_) {
+        await new Promise((resolve, reject) => {
+          img.onload = resolve; img.onerror = reject;
+        });
+      }
+      // 优先用解码后的自然尺寸，避免 data URL SVG 的 width 属性（ex 单位）误导
+      const dw = img.naturalWidth && img.naturalWidth > 4 ? img.naturalWidth : w;
+      const dh = img.naturalHeight && img.naturalHeight > 4 ? img.naturalHeight : h;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(dw * scale);
+      canvas.height = Math.ceil(dh * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      // 关键：直接 drawImage(SVG) 在 Chromium 上偶尔画出空白（SVG 首次光栅化竞态，
+      // 且对部分公式必现）。createImageBitmap 把 SVG 预先光栅化为位图，drawImage 位图
+      // 永远稳定；失败则回退直接画并重试一帧。
+      let drew = false;
+      if (typeof createImageBitmap === 'function') {
+        try {
+          const bmp = await createImageBitmap(img);
+          ctx.drawImage(bmp, 0, 0, dw, dh);
+          bmp.close();
+          drew = true;
+        } catch (_) { /* 回退下方 */ }
+      }
+      if (!drew) {
+        ctx.drawImage(img, 0, 0, dw, dh);
+        // 检测空白：若整张透明，等一帧重画一次（兜底光栅化竞态）
+        const probe = ctx.getImageData(0, 0, Math.min(canvas.width, 8), Math.min(canvas.height, 8)).data;
+        let anyPixel = false;
+        for (let i = 3; i < probe.length; i += 4) { if (probe[i] > 10) { anyPixel = true; break; } }
+        if (!anyPixel) {
+          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          ctx.drawImage(img, 0, 0, dw, dh);
+        }
+      }
+      return canvas.toDataURL('image/png');
+    },
+
+    // —— mermaid 主题适配：从当前文章样式派生 mermaid themeVariables ——
+    // 节点填充=accent 浅 tint，边框/连线=accent，文字=text，背景=bg，子图=淡 tint
+    // 让图表配色跟随排版器 20 种样式风格，而非永远 mermaid 默认蓝。
+    _mermaidColor(styleStr, key) {
+      if (!styleStr) return null;
+      // 捕获 key: 值中首个 hex（兼容 'border-bottom: 2px solid #3498db' 这类值里 # 不紧跟冒号的情况）
+      const m = styleStr.match(new RegExp(key + ':\\s*[^;]*?(#[0-9a-fA-F]{3,8})'));
+      return m ? m[1] : null;
+    },
+    _hexMix(hex, whiteRatio) {
+      let h = hex.replace('#', '');
+      if (h.length === 3) h = h.split('').map(c => c + c).join('');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      const nr = Math.round(r + (255 - r) * whiteRatio), ng = Math.round(g + (255 - g) * whiteRatio), nb = Math.round(b + (255 - b) * whiteRatio);
+      return '#' + [nr, ng, nb].map(x => x.toString(16).padStart(2, '0')).join('');
+    },
+    _hexLuma(hex) {
+      let h = hex.replace('#', '');
+      if (h.length === 3) h = h.split('').map(c => c + c).join('');
+      const r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255;
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    },
+    _rgbToHex(rgb) {
+      const m = rgb.match(/rgba?\(\s*(\d+)[, ]\s*(\d+)[, ]\s*(\d+)/);
+      if (!m) return null;
+      return '#' + [m[1], m[2], m[3]].map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+    },
+    mermaidThemeConfig() {
+      const st = (STYLES[this.currentStyle] || STYLES['wechat-default']).styles;
+      const bg = this._mermaidColor(st.container, 'background-color') || '#ffffff';
+      const text = this._mermaidColor(st.p, 'color') || '#3f3f3f';
+      const heading = this._mermaidColor(st.h1, 'color') || text;
+      // accent：优先 h2 左边框，其次 h1 下边框，其次标题色
+      const accent =
+        this._mermaidColor(st.h2, 'border-left') ||
+        this._mermaidColor(st.h1, 'border-bottom') ||
+        this._mermaidColor(st.h2, 'border-bottom') ||
+        heading;
+      const fontFamilyMatch = (st.container.match(/font-family:\s*([^;]+);/) || [])[1];
+      const fontFamily = (fontFamilyMatch || 'sans-serif').trim();
+      const dark = this._hexLuma(bg) < 0.45;
+      // 深色背景：节点用深底浅字；浅色背景：节点用 accent 浅 tint
+      const nodeFill = dark ? this._hexMix(accent, -0.0) : this._hexMix(accent, 0.82);
+      const nodeText = dark ? '#f5f5f5' : text;
+      const lineColor = dark ? this._hexMix(accent, 0.3) : this._hexMix(accent, 0.25);
+      return {
+        startOnLoad: false,
+        theme: 'base',
+        securityLevel: 'strict',
+        fontFamily: fontFamily + ', "PingFang SC", "Microsoft YaHei", sans-serif',
+        gantt: { fontSize: 14 },
+        themeVariables: {
+          fontFamily: fontFamily + ', "PingFang SC", "Microsoft YaHei", sans-serif',
+          fontSize: '15px',
+          background: bg,
+          primaryColor: nodeFill,
+          primaryTextColor: nodeText,
+          primaryBorderColor: accent,
+          lineColor: lineColor,
+          secondaryColor: this._hexMix(accent, 0.7),
+          secondaryBorderColor: accent,
+          secondaryTextColor: nodeText,
+          tertiaryColor: this._hexMix(accent, 0.9),
+          tertiaryBorderColor: accent,
+          tertiaryTextColor: nodeText,
+          textColor: text,
+          clusterBkg: this._hexMix(accent, 0.92),
+          clusterBorder: this._hexMix(accent, 0.5),
+          edgeLabelBackground: bg,
+          // 状态图 / 序列图等也跟随
+          nodeBorder: accent,
+          nodeTextColor: nodeText,
+        }
+      };
+    },
+
+    async processMermaid(html) {
+      const md = this.md;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const blocks = doc.querySelectorAll('.mermaid[data-source]');
+
+      if (blocks.length === 0) {
+        return html;
+      }
+
+      // 等待 mermaid 库就绪（ESM 异步加载，可能晚于首次渲染）
+      if (!window.__mermaidReady) {
+        await new Promise((resolve) => {
+          window.addEventListener('mermaid-ready', resolve, { once: true });
+        });
+      }
+
+      const mermaid = window.mermaid;
+      if (!mermaid) {
+        console.warn('mermaid 库未加载，跳过图表渲染');
+        return html;
+      }
+
+      // 按当前文章样式切换 mermaid 主题（节点/连线/子图配色跟随排版风格）
+      try { mermaid.initialize(this.mermaidThemeConfig()); } catch (e) { console.warn('mermaid 主题初始化失败', e); }
+
+      for (const block of blocks) {
+        const code = decodeURIComponent(block.getAttribute('data-source') || '');
+        const renderId = block.getAttribute('data-render-id') || ('m-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
+
+        try {
+          const { svg } = await mermaid.render(renderId, code);
+          block.innerHTML = svg;
+          // 标记 svg 供复制时识别
+          const svgEl = block.querySelector('svg');
+          if (svgEl) {
+            svgEl.setAttribute('data-mermaid-svg', '1');
+            // mermaid gantt 轴标签等小字硬编码 10px（themeVariables 无法覆盖），
+            // 预览时偏小；对所有 <text> 设字号下限 12px，保证可读。
+            for (const t of svgEl.querySelectorAll('text')) {
+              const fs = parseFloat(t.getAttribute('font-size'));
+              if (fs && fs < 12) t.setAttribute('font-size', '12');
+            }
+            // 兜底尺寸：mermaid 偶尔输出 100% 宽度，Image 加载 SVG 需要明确数值
+            if (!svgEl.getAttribute('width') || svgEl.getAttribute('width').endsWith('%')) {
+              const vb = svgEl.getAttribute('viewBox');
+              if (vb) {
+                const parts = vb.split(/\s+/);
+                if (parts.length === 4) {
+                  svgEl.setAttribute('width', String(Math.round(parseFloat(parts[2]))));
+                  svgEl.setAttribute('height', String(Math.round(parseFloat(parts[3]))));
+                }
+              }
+            }
+          }
+          block.removeAttribute('data-source');
+          block.removeAttribute('data-render-id');
+        } catch (err) {
+          console.error('mermaid 渲染失败:', err);
+          const msg = (err && err.message) ? err.message : String(err);
+          block.innerHTML = `<pre style="text-align:left;background:#fff3cd;color:#856404;padding:12px 14px;border-radius:6px;overflow:auto;font-size:12px;line-height:1.5;margin:0;white-space:pre-wrap;">⚠️ Mermaid 语法错误：${md.utils.escapeHtml(msg)}\n\n${md.utils.escapeHtml(code)}</pre>`;
+          block.removeAttribute('data-source');
+          block.removeAttribute('data-render-id');
+        }
+      }
+
+      return doc.body.innerHTML;
+    },
+
+    // SVG 转 PNG Base64（公众号对内联 SVG 支持不稳定，转成图片最可靠）
+    async svgToPng(svgEl, scale = 2) {
+      // 1. 先从原始 DOM 读取 foreignObject 内文字与样式。
+      // mermaid 的 flowchart/stateDiagram/erDiagram 用 <foreignObject> 包裹 HTML 文字渲染节点标签，
+      // 而 Chromium 的 <img> 解码 SVG 时不会实例化 foreignObject 内的 HTML ——
+      // 直接序列化转 PNG 会丢失这些文字（用户反馈“文字不显示”即源于此）。
+      // 这里在克隆前用 getComputedStyle 读取字号/字体/颜色（克隆后取不到），
+      // 之后把 foreignObject 替换为 SVG <text>，确保 PNG 不丢字。
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      const foData = Array.from(svgEl.querySelectorAll('foreignObject')).map(fo => {
+        const foW = parseFloat(fo.getAttribute('width')) || 100;
+        const foH = parseFloat(fo.getAttribute('height')) || 20;
+        const div = fo.querySelector('div');
+        let textAlign = 'center';
+        if (div) {
+          const ds = div.getAttribute('style') || '';
+          const m = ds.match(/text-align:\s*([\w-]+)/);
+          if (m) textAlign = m[1];
+        }
+        const p = fo.querySelector('p') || fo.querySelector('span') || div;
+        let fontSize = 16, color = '#3f3f3f', fontFamily = '';
+        if (p) {
+          const cs = getComputedStyle(p);
+          fontSize = parseFloat(cs.fontSize) || 16;
+          fontFamily = cs.fontFamily || '';
+          // mermaid 主题色经 CSS 类应用、不在 inline style 上，用计算样式取色
+          const c = this._rgbToHex(cs.color);
+          if (c) color = c;
+        }
+        // 多行标签（<br> 或块级子元素）逐行收集 —— textContent 会把多行合并成一行，
+        // 单行 <text> 不换行，超长文字超出节点框被裁掉（复制为 PNG 后文字丢失的另一根因）。
+        const lines = [];
+        let cur = '';
+        const flush = () => { const v = cur.trim(); if (v) lines.push(v); cur = ''; };
+        const walk = (node) => {
+          for (const n of node.childNodes) {
+            if (n.nodeType === 3) { cur += n.textContent; }
+            else if (n.nodeType === 1) {
+              if (n.tagName === 'BR') { flush(); }
+              else if (/^(DIV|P|TABLE|TR|TD|UL|OL|LI)$/.test(n.tagName)) { flush(); walk(n); flush(); }
+              else { walk(n); } // span/b/i 等行内元素不切行
+            }
+          }
+        };
+        walk(div || fo);
+        flush();
+        if (!lines.length) { const t = (fo.textContent || '').trim(); if (t) lines.push(t); }
+        return { lines, width: foW, height: foH, fontSize, fontFamily, color, textAlign };
+      });
+
+      // 2. 克隆并补全 width/height（Image 加载 SVG 需要明确数值尺寸）
+      const clone = svgEl.cloneNode(true);
+      let width = parseFloat(svgEl.getAttribute('width')) || svgEl.getBoundingClientRect().width || 800;
+      let height = parseFloat(svgEl.getAttribute('height')) || svgEl.getBoundingClientRect().height || 600;
+      // 限制最大尺寸，避免超大图表生成过大的 PNG
+      const maxDim = 2400;
+      if (width > maxDim) { height = height * (maxDim / width); width = maxDim; }
+      if (height > maxDim) { width = width * (maxDim / height); height = maxDim; }
+      clone.setAttribute('width', String(Math.round(width)));
+      clone.setAttribute('height', String(Math.round(height)));
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      if (!clone.getAttribute('viewBox')) {
+        clone.setAttribute('viewBox', `0 0 ${Math.round(width)} ${Math.round(height)}`);
+      }
+
+      // 3. 把克隆里的 foreignObject 替换为 <text>，恢复节点标签文字
+      const cloneFos = Array.from(clone.querySelectorAll('foreignObject'));
+      for (let i = 0; i < cloneFos.length; i++) {
+        const fo = cloneFos[i];
+        const d = foData[i];
+        if (!d || !d.lines || !d.lines.length) { fo.remove(); continue; }
+        const t = document.createElementNS(SVG_NS, 'text');
+        let x;
+        if (d.textAlign === 'start' || d.textAlign === 'left') {
+          t.setAttribute('text-anchor', 'start'); x = 0;
+        } else if (d.textAlign === 'end' || d.textAlign === 'right') {
+          t.setAttribute('text-anchor', 'end'); x = d.width;
+        } else {
+          t.setAttribute('text-anchor', 'middle'); x = d.width / 2;
+        }
+        t.setAttribute('font-size', String(d.fontSize));
+        t.setAttribute('font-family', d.fontFamily || 'sans-serif');
+        t.setAttribute('fill', d.color);
+        // 每行一个 tspan，多行整体垂直居中于原 foreignObject 区域
+        const lineH = d.fontSize * 1.25;
+        const totalH = d.lines.length * lineH;
+        const firstCY = d.height / 2 - totalH / 2 + lineH / 2;
+        d.lines.forEach((ln, li) => {
+          const ts = document.createElementNS(SVG_NS, 'tspan');
+          ts.setAttribute('x', String(x));
+          ts.setAttribute('y', String(firstCY + li * lineH));
+          ts.setAttribute('dominant-baseline', 'central');
+          ts.textContent = ln;
+          t.appendChild(ts);
+        });
+        fo.parentNode.replaceChild(t, fo);
+      }
+
+      // 4. mermaid gantt 轴标签等小字硬编码 10px（themeVariables 无法覆盖），
+      //    复制为 PNG 后偏小；对所有 <text> 设字号下限 12px，保证可读（不影响大字）。
+      for (const t of clone.querySelectorAll('text')) {
+        const fs = parseFloat(t.getAttribute('font-size'));
+        if (fs && fs < 12) t.setAttribute('font-size', '12');
+      }
+
+      const svgData = new XMLSerializer().serializeToString(clone);
+      // 用 data URL 而非 blob: URL —— Chromium 对 blob: SVG 执行 drawImage 后会判定 canvas tainted，
+      // 导致 toDataURL 抛 SecurityError；data URL 属 same-origin，不污染画布。
+      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(width * scale);
+      canvas.height = Math.ceil(height * scale);
+      const ctx = canvas.getContext('2d');
+      // 白底，避免透明背景在公众号显示异常
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/png');
+    },
+
     applyInlineStyles(html) {
       const style = STYLES[this.currentStyle].styles;
       const parser = new DOMParser();
@@ -1341,6 +1767,12 @@ const markdown = \`![图片](img://\${imageId})\`;
         // 跳过已经在网格容器中的图片
         const elements = doc.querySelectorAll(selector);
         elements.forEach(el => {
+          // mermaid / MathJax SVG 内部不应用文章排版样式：
+          // p 的 margin/line-height 会把标签文字挤出可视区，导致文字消失/显示成点
+          if (el.closest('.mermaid-wrapper') || el.closest('[data-math]')) {
+            return;
+          }
+
           // 如果是图片且在网格容器内，跳过样式应用
           if (el.tagName === 'IMG' && el.closest('.image-grid')) {
             return;
@@ -1708,6 +2140,50 @@ const markdown = \`![图片](img://\${imageId})\`;
 
         // 将图片网格转换为 table 布局（公众号兼容）
         this.convertGridToTable(doc);
+
+        // 数学公式：SVG 转 PNG（公众号不支持内联 SVG）
+        const mathContainers = doc.querySelectorAll('[data-math="1"]');
+        if (mathContainers.length > 0) {
+          for (const mc of Array.from(mathContainers)) {
+            const svgEl = mc.querySelector('svg[data-math-svg]');
+            if (!svgEl) continue;
+            try {
+              const png = await this.mathSvgToPng(svgEl, 4);
+              const img = doc.createElement('img');
+              img.setAttribute('src', png);
+              img.setAttribute('alt', '公式');
+              const isBlock = mc.classList.contains('math-block');
+              img.setAttribute('style', isBlock
+                ? 'max-width: 100%; height: auto; display: block; margin: 16px auto;'
+                : 'max-width: 100%; height: auto; display: inline-block; vertical-align: middle;');
+              mc.parentNode.replaceChild(img, mc);
+            } catch (err) {
+              console.error('公式转 PNG 失败:', err);
+            }
+          }
+        }
+
+        // Mermaid 图表：SVG 转 PNG（公众号对内联 SVG 支持不稳定，转成图片最可靠）
+        const mermaidWrappers = doc.querySelectorAll('.mermaid-wrapper[data-mermaid]');
+        if (mermaidWrappers.length > 0) {
+          this.showToast(`正在处理 ${mermaidWrappers.length} 个图表...`, 'success');
+          for (const wrapper of Array.from(mermaidWrappers)) {
+            const svgEl = wrapper.querySelector('svg');
+            if (!svgEl) continue;
+            try {
+              const png = await this.svgToPng(svgEl, 2);
+              const img = doc.createElement('img');
+              img.setAttribute('src', png);
+              img.setAttribute('alt', 'Mermaid 图表');
+              img.setAttribute('style', 'max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 6px;');
+              wrapper.parentNode.replaceChild(img, wrapper);
+            } catch (err) {
+              console.error('mermaid 转 PNG 失败，降级保留 SVG:', err);
+              // 降级：保留 SVG，去掉 wrapper 背景/边框减少公众号样式冲突
+              wrapper.setAttribute('style', 'margin: 20px 0; text-align: center; overflow-x: auto;');
+            }
+          }
+        }
 
         // 处理图片：转为 Base64（串行处理，降低内存峰值）
         const images = doc.querySelectorAll('img');

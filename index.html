@@ -27,6 +27,41 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/highlight.min.js"></script>
 
+  <!-- Mermaid 图表渲染库（ESM，挂载到 window.mermaid） -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'strict',
+      // 中文字体：原 Trebuchet MS 不含中文，会回退到系统默认导致显示不一致
+      fontFamily: 'Trebuchet MS, Verdana, Arial, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif',
+      // gantt 轴标签默认字号 10px 偏小，复制为 PNG 后文字过小，调大到 14px
+      gantt: { fontSize: 14 }
+    });
+    window.mermaid = mermaid;
+    window.__mermaidReady = true;
+    window.dispatchEvent(new CustomEvent('mermaid-ready'));
+  </script>
+
+  <!-- MathJax 数学公式渲染（SVG 输出，自包含字形无字体依赖，复制时转 PNG） -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: { fontCache: 'local' },
+      startup: {
+        pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+          window.__mathjaxReady = true;
+          window.dispatchEvent(new Event('mathjax-ready'));
+        })
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
   <!-- Turndown - HTML 转 Markdown 库 -->
   <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js"></script>
 
