@@ -44,6 +44,24 @@
     window.dispatchEvent(new CustomEvent('mermaid-ready'));
   </script>
 
+  <!-- MathJax 数学公式渲染（SVG 输出，自包含字形无字体依赖，复制时转 PNG） -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: { fontCache: 'local' },
+      startup: {
+        pageReady: () => MathJax.startup.defaultPageReady().then(() => {
+          window.__mathjaxReady = true;
+          window.dispatchEvent(new Event('mathjax-ready'));
+        })
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+
   <!-- Turndown - HTML 转 Markdown 库 -->
   <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js"></script>
 
