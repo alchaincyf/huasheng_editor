@@ -196,7 +196,7 @@ IndexedDB 持久化存储
 
 ## 📊 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=alchaincyf/huasheng_editor&type=Date)](https://star-history.com/#alchaincyf/huasheng_editor&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=alchaincyf/huasheng_editor&type=Date)](https://star-history.dera.page/#alchaincyf/huasheng_editor&Date)
 
 ---
 
