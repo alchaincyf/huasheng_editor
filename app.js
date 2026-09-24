@@ -555,8 +555,15 @@ function withTimeout(promise, ms, message = '操作超时') {
 
 const editorApp = createApp({
   data() {
+    // 静态外壳接管：Vue 挂载时会把 #app 容器现有的子节点（原生 textarea）
+    // 整体替换掉，所以内容必须在这里——替换真正发生之前——读出来塞进初始数据。
+    // window.__shellTextarea 是 index.html 里紧跟 textarea 后面那段内联脚本埋的引用；
+    // textarea.value 是表单元素自带的状态，即使节点马上要被摘出 DOM，此刻读取
+    // 仍然是准的（跟 activeElement 那种依赖节点还在文档树里的状态不一样——
+    // wasFocused/光标位置那部分挪到本文件最后 mount() 调用前去读了，原因见那里的注释）。
+    const shellValue = (window.__shellTextarea && window.__shellTextarea.value) || '';
     return {
-      markdownInput: '',
+      markdownInput: shellValue,
       renderedContent: '',
       currentStyle: 'wechat-default',
       copySuccess: false,
@@ -636,6 +643,10 @@ const editorApp = createApp({
 
     // 加载用户偏好设置
     this.loadUserPreferences();
+
+    // 静态外壳交接：内容已经在 data() 里接过来了，这里补上光标位置，
+    // 等这次渲染真正 patch 到 DOM 上之后再做（$nextTick）
+    this.$nextTick(() => this.restoreShellSelection());
 
     // 加载文章历史记录
     this.loadArticleHistory();
@@ -806,6 +817,12 @@ const editorApp = createApp({
           this.currentStyle = savedStyle;
         }
 
+        // 如果用户在 Vue 挂载前已经往静态外壳 textarea 里打了字（data() 里已经
+        // 接过来了），这里就不能再用 localStorage/默认示例覆盖掉——那才是真的丢字。
+        if (this.markdownInput && this.markdownInput.trim() !== '') {
+          return;
+        }
+
         // 加载上次的内容
         const savedContent = localStorage.getItem('markdownInput');
         if (savedContent) {
@@ -818,6 +835,31 @@ const editorApp = createApp({
         console.error('加载用户偏好失败:', error);
         // 加载失败时使用默认示例
         this.loadDefaultExample();
+      }
+    },
+
+    // 静态外壳交接的最后一步：把挂载前那个原生 textarea 的光标/选区位置，
+    // 复原到 Vue 渲染出的新 textarea 上，让用户感觉不到 DOM 被整体换了一次。
+    // 内容本身已经在 data() 里接过来了，这里只管「看起来没有跳一下」。
+    restoreShellSelection() {
+      // 注意：不能在这里再查 document.activeElement === window.__shellTextarea
+      // 来判断「挂载前是不是聚焦的」——Vue 替换 DOM 那个动作本身就会把
+      // activeElement 同步挪到 body，等这个方法跑到时已经查不出来了。
+      // 真正的判断结果是 data() 里、DOM 还没被替换之前存的 window.__shellHandoffInfo。
+      const info = window.__shellHandoffInfo;
+      if (!info) return;
+      const ta = this.$refs.editorTextarea;
+      if (!ta) return;
+      try {
+        if (info.wasFocused) {
+          ta.focus();
+        }
+        if (typeof info.selectionStart === 'number' && typeof info.selectionEnd === 'number') {
+          ta.setSelectionRange(info.selectionStart, info.selectionEnd);
+        }
+      } catch (e) {
+        // 拿不到选区就算了，内容已经保住了，光标位置不是硬要求
+        console.warn('恢复外壳光标位置失败:', e);
       }
     },
 
@@ -3564,5 +3606,21 @@ const markdown = \`![图片](img://\${imageId})\`;
     }
   }
 });
+
+// 静态外壳交接，第二部分：wasFocused/光标位置必须在这里、紧贴 mount() 调用前
+// 同步读出来，不能挪到 data() 里读。踩过的坑：Vue 的 mount() 内部会先把
+// #app 容器现有的子节点清空/替换掉，这一步在 createApp(options) 的 data()
+// 真正被调用之前就发生了——等 data() 跑到时 document.activeElement 早就被
+// 挪到 body 了，永远读到「没聚焦」。textarea.value 这种表单状态即使节点被摘出
+// DOM 也还留在内存里（data() 里读 shellValue 那部分不受影响，只有
+// document.activeElement 这种依赖节点仍在文档树里的状态，必须提前到这里读）。
+if (window.__shellTextarea) {
+  const shell = window.__shellTextarea;
+  window.__shellHandoffInfo = {
+    wasFocused: document.activeElement === shell,
+    selectionStart: shell.selectionStart,
+    selectionEnd: shell.selectionEnd,
+  };
+}
 
 editorApp.mount('#app');

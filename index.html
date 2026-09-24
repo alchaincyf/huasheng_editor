@@ -20,8 +20,12 @@
   <link rel="alternate icon" href="favicon.svg">
   <link rel="mask-icon" href="favicon.svg" color="#0066FF">
 
-  <!-- Markdown 渲染库（同源自建，锁定跟线上一样的版本号 14.0.0，见 vendor/README.md） -->
-  <script src="vendor/markdown-it.min.js"></script>
+  <!-- Markdown 渲染库（同源自建，锁定跟线上一样的版本号 14.0.0，见 vendor/README.md）。
+       加 defer：不再挡着 HTML 解析——静态外壳 textarea 在 <body> 里，
+       不能等这个下载完才能被解析到。defer 脚本按文档顺序、在
+       DOMContentLoaded 前执行，跟原来的同步阻塞顺序（markdown-it → vue →
+       styles.js → app.js）保持一致，app.js 依赖它们的初始化顺序不受影响。 -->
+  <script src="vendor/markdown-it.min.js" defer></script>
 
   <!-- 代码高亮库的 CSS+JS 这两行整个删掉了，不是漏改。
        线上这两行原来是：
@@ -38,8 +42,8 @@
        不在这次首屏提速的授权范围内（黄金测试要求渲染结果逐字节不变），得留给
        花叔单独决定要不要修。详细来龙去脉见 vendor/README.md。 -->
 
-  <!-- Vue.js（同源自建，锁定跟线上一样的版本号 3.4.15） -->
-  <script src="vendor/vue.global.prod.js"></script>
+  <!-- Vue.js（同源自建，锁定跟线上一样的版本号 3.4.15）。同样加 defer，理由见上面 markdown-it 那条 -->
+  <script src="vendor/vue.global.prod.js" defer></script>
 
   <!-- Turndown（HTML转Markdown）和 html2canvas（生成小红书图片）改成按需加载，
        见 app.js 的 ensureTurndown() / ensureHtml2Canvas()，不再占首屏关键路径 -->
@@ -1719,6 +1723,18 @@
 💡 提示：可以直接粘贴截图，或拖拽图片文件到这里"
             spellcheck="false"
           ></textarea>
+          <script>
+            // 静态外壳：这个 textarea 是原生 HTML，浏览器解析到这里就能打字，
+            // 不用等 Vue/markdown-it 下载执行完。这段内联脚本紧跟在它后面，
+            // 解析器走到这一行就同步执行——记下"外壳可以安全接收输入"的时间点，
+            // 并把当前 DOM 引用存起来，供 app.js 挂载时接管（见 data()/mounted()
+            // 里读 window.__shellTextarea 那部分，实验日志.md 第 3 步有详细说明）。
+            (function () {
+              var ta = document.currentScript.previousElementSibling;
+              window.__shellTextarea = ta;
+              window.__shellReadyTime = performance.now();
+            })();
+          </script>
         </div>
 
         <!-- 编辑器底部工具栏 -->
@@ -2030,8 +2046,11 @@
     </div>
   </div>
 
-  <!-- 加载脚本 -->
-  <script src="styles.js?v=2"></script>
-  <script src="app.js?v=2"></script>
+  <!-- 加载脚本。styles.js/app.js 也要加 defer——不然它们本来就在文档最后，
+       会比上面已经 defer 的 markdown-it/vue 先同步执行，app.js 一开头就要用
+       window.markdownit 和 Vue，届时还没定义会直接报错。defer 后四个脚本
+       仍按文档顺序在 DOMContentLoaded 前依次执行，顺序跟原来一致。 -->
+  <script src="styles.js?v=2" defer></script>
+  <script src="app.js?v=2" defer></script>
 </body>
 </html>
