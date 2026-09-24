@@ -27,14 +27,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/highlight.min.js"></script>
 
-  <!-- Turndown - HTML 转 Markdown 库 -->
-  <script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js"></script>
-
   <!-- Vue.js -->
   <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
 
-  <!-- html2canvas - 用于生成小红书图片 -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <!-- Turndown（HTML转Markdown）和 html2canvas（生成小红书图片）改成按需加载，
+       见 app.js 的 ensureTurndown() / ensureHtml2Canvas()，不再占首屏关键路径 -->
 
   <style>
     :root {

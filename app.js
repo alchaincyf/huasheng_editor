@@ -660,8 +660,8 @@ const editorApp = createApp({
       quality: 0.85
     });
 
-    // 初始化 Turndown 服务（HTML 转 Markdown）
-    this.initTurndownService();
+    // Turndown（HTML 转 Markdown）改成按需加载：只有真的粘贴了富文本才需要它，
+    // 见 ensureTurndown() / handleSmartPaste()，这里不再预加载。
 
     // 初始化 markdown-it
     const md = window.markdownit({
@@ -2466,6 +2466,47 @@ const markdown = \`![图片](img://\${imageId})\`;
       };
     },
 
+    // 按 src 懒加载一个 <script>，同一个 src 并发/重复调用只会真正加载一次
+    loadScriptOnce(src) {
+      if (!this._loadedScripts) this._loadedScripts = {};
+      if (this._loadedScripts[src]) return this._loadedScripts[src];
+      this._loadedScripts[src] = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('加载脚本失败: ' + src));
+        document.head.appendChild(script);
+      });
+      return this._loadedScripts[src];
+    },
+
+    // 确保 Turndown 已加载并初始化好——用到时才加载（首次粘贴富文本时才触发）
+    async ensureTurndown() {
+      if (this.turndownService) return true;
+      if (typeof TurndownService === 'undefined') {
+        try {
+          await this.loadScriptOnce('https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js');
+        } catch (e) {
+          console.warn('按需加载 turndown 失败:', e);
+          return false;
+        }
+      }
+      this.initTurndownService();
+      return !!this.turndownService;
+    },
+
+    // 确保 html2canvas 已加载——用到时才加载（首次生成小红书图片时才触发）
+    async ensureHtml2Canvas() {
+      if (typeof html2canvas !== 'undefined') return true;
+      try {
+        await this.loadScriptOnce('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+      } catch (e) {
+        console.warn('按需加载 html2canvas 失败:', e);
+        return false;
+      }
+      return typeof html2canvas !== 'undefined';
+    },
+
     // 初始化 Turndown 服务
     initTurndownService() {
       if (typeof TurndownService === 'undefined') {
@@ -2595,6 +2636,11 @@ const markdown = \`![图片](img://\${imageId})\`;
         this.showToast('⚠️ 请尝试：截图工具 / 浏览器复制 / 拖拽文件', 'error');
         event.preventDefault();
         return; // 不插入占位符文本
+      }
+
+      // 有富文本 HTML 才需要 turndown，按需加载（不是每次粘贴都加载）
+      if (htmlData && htmlData.trim() !== '') {
+        await this.ensureTurndown();
       }
 
       if (DEBUG) {
@@ -2897,8 +2943,10 @@ const markdown = \`![图片](img://\${imageId})\`;
         return;
       }
 
-      if (typeof html2canvas === 'undefined') {
-        this.showToast('html2canvas 库未加载', 'error');
+      // html2canvas 按需加载：只有真的要生成小红书图片才拉这个库
+      const html2canvasReady = await this.ensureHtml2Canvas();
+      if (!html2canvasReady) {
+        this.showToast('html2canvas 库加载失败', 'error');
         return;
       }
 
