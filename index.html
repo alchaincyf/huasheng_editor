@@ -20,15 +20,26 @@
   <link rel="alternate icon" href="favicon.svg">
   <link rel="mask-icon" href="favicon.svg" color="#0066FF">
 
-  <!-- Markdown 渲染库 -->
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
+  <!-- Markdown 渲染库（同源自建，锁定跟线上一样的版本号 14.0.0，见 vendor/README.md） -->
+  <script src="vendor/markdown-it.min.js"></script>
 
-  <!-- 代码高亮库 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/highlight.min.js"></script>
+  <!-- 代码高亮库的 CSS+JS 这两行整个删掉了，不是漏改。
+       线上这两行原来是：
+         <link ... highlight.js@11.9.0/styles/atom-one-dark.min.css>
+         <script src=".../highlight.js@11.9.0/es/highlight.min.js">
+       搬迁时想自建同版本号的本地文件，一查发现 JS 那行的 URL 在 jsdelivr 上
+       是 404（highlight.js v11 的 npm 包已经不提供 /es/highlight.min.js 这个
+       文件了），意味着 hljs 全局变量从来没被定义过、代码高亮从上线起就没真正
+       生效过。app.js 里 highlight 回调本来就用 `typeof hljs !== 'undefined'`
+       兜底，走的一直是 `md.utils.escapeHtml(str)` 纯转义分支；CSS 那行同理
+       没有任何 hljs-* 的 class 可以命中，也是纯摆设。
+       两个文件目前对渲染结果零贡献，所以直接删掉了两个请求，而不是花力气
+       自建一份「修好的」版本——那样会真的让代码块开始高亮，改变渲染出的 HTML，
+       不在这次首屏提速的授权范围内（黄金测试要求渲染结果逐字节不变），得留给
+       花叔单独决定要不要修。详细来龙去脉见 vendor/README.md。 -->
 
-  <!-- Vue.js -->
-  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.15/dist/vue.global.prod.js"></script>
+  <!-- Vue.js（同源自建，锁定跟线上一样的版本号 3.4.15） -->
+  <script src="vendor/vue.global.prod.js"></script>
 
   <!-- Turndown（HTML转Markdown）和 html2canvas（生成小红书图片）改成按需加载，
        见 app.js 的 ensureTurndown() / ensureHtml2Canvas()，不再占首屏关键路径 -->
