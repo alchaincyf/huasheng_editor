@@ -3,7 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>公众号排版器</title>
+  <title>公众号排版器 - 免费微信公众号排版工具，Markdown一键排版</title>
+  <meta name="description" content="免费的微信公众号排版工具：粘贴Markdown或飞书、Notion、Word内容，实时预览20种排版样式，图片粘贴即用，一键复制到公众号编辑器，格式不丢。">
+  <link rel="canonical" href="https://editor.huasheng.ai/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://editor.huasheng.ai/">
+  <meta property="og:title" content="公众号排版器 - 免费微信公众号排版工具">
+  <meta property="og:description" content="粘贴Markdown，选一个样式，一键复制到微信公众号。20种排版样式，免费开源，不用注册。">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "公众号排版器",
+  "url": "https://editor.huasheng.ai/",
+  "description": "免费的微信公众号Markdown排版工具，实时预览20种排版样式，一键复制到公众号编辑器。",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "zh-CN",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CNY"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "花生",
+    "url": "https://www.huasheng.ai/"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "公众号排版器收费吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "免费。打开网页就能用，不需要注册登录，代码在GitHub开源。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "粘贴到公众号以后格式会乱吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "复制时样式会一起写进内容里，粘贴到微信公众号编辑器后，标题、引用、列表、代码块和表格都会保留排版效果。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "文章里的图片怎么处理？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "截图可以直接粘贴，图片文件可以直接拖进编辑器。图片会自动压缩并保存在你的浏览器里，刷新页面也不会丢；复制到公众号时会自动转换成公众号能识别的格式，不用先上传图床。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "我写的内容会上传到服务器吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "不会。文章和图片都只保存在你自己的浏览器里（localStorage和IndexedDB），换浏览器或清除浏览器数据前，记得把重要文章另存一份。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "能直接粘贴飞书、Notion或Word里的内容吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "能。从飞书、Notion、Word等富文本复制的内容，粘贴时会自动转换成Markdown，标题、列表、加粗等格式会保留下来。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "手机上能用吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "能，页面适配手机和平板。长文排版还是建议在电脑上操作，左右分栏看预览更方便。"
+      }
+    }
+  ]
+}
+  </script>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-5FTJSWC1Z5"></script>
@@ -1610,6 +1697,22 @@
         right: 0;
       }
     }
+    /* 工具下方的介绍区：不依赖JS，爬虫第一次抓HTML就能读到 */
+    .seo-intro {
+      background: var(--color-bg);
+      border-top: 1px solid var(--color-border);
+      padding: 48px 16px 64px;
+    }
+    .seo-intro__inner { max-width: 820px; margin: 0 auto; }
+    .seo-intro h1 { font-size: 26px; line-height: 1.35; margin-bottom: 16px; }
+    .seo-intro h2 { font-size: 20px; margin: 36px 0 12px; }
+    .seo-intro h3 { font-size: 16px; margin: 20px 0 6px; }
+    .seo-intro p, .seo-intro li { color: var(--color-secondary, #555); }
+    .seo-intro ul, .seo-intro ol { padding-left: 1.4em; }
+    .seo-intro li { margin: 6px 0; }
+    .seo-intro__lead { font-size: 16px; }
+    .seo-intro__foot { margin-top: 36px; font-size: 13px; }
+    .seo-intro a { color: #0066FF; }
   </style>
 </head>
 <body>
@@ -2040,6 +2143,48 @@
       {{ toast.message }}
     </div>
   </div>
+
+  <!-- 介绍区：静态HTML，放在工具下方。爬虫不执行JS，这里是它唯一能读到的正文 -->
+  <section class="seo-intro" aria-labelledby="seo-intro-title">
+    <div class="seo-intro__inner">
+      <h1 id="seo-intro-title">公众号排版器：免费的微信公众号Markdown排版工具</h1>
+      <p class="seo-intro__lead">把写好的Markdown，或者从飞书、Notion、Word复制的内容粘贴进来，右侧实时预览排版效果。选一个样式，点「复制到公众号」，再粘贴进微信公众号后台的编辑器就完成了。打开网页就能用，不用注册，也不用装插件。</p>
+
+      <h2>公众号排版器能做什么</h2>
+      <ul>
+        <li>20种公众号排版样式：默认公众号风格、技术风格、深度阅读、优雅简约、纽约时报、金融时报、卫报、日経、Apple极简、Claude等，点一下就切换，常用的可以收藏。</li>
+        <li>Markdown实时预览：左边写，右边马上看到排版后的样子，代码块自动高亮。</li>
+        <li>智能粘贴：飞书、Notion、Word里复制的内容，粘贴时自动转成Markdown，不用手动整理格式。</li>
+        <li>图片粘贴和拖拽：截图直接粘贴，图片文件直接拖进来，自动压缩，复制到公众号时自动转换，不需要图床。</li>
+        <li>多图排版：连续的多张图片自动排成两到三列的网格。</li>
+        <li>一键复制到公众号：复制出来的就是带样式的内容，粘贴进公众号编辑器即可。</li>
+        <li>本地历史记录：写过的文章保存在浏览器里，随时打开继续改；也可以直接上传.md文件。</li>
+      </ul>
+
+      <h2>三步完成公众号排版</h2>
+      <ol>
+        <li>在左侧输入或粘贴Markdown，也可以粘贴飞书、Notion、Word里的内容，或者上传.md文件。</li>
+        <li>在顶部选一个排版样式，右侧预览会跟着变。</li>
+        <li>点「复制到公众号」，打开微信公众号后台的图文编辑器，粘贴即可。</li>
+      </ol>
+
+      <h2>常见问题</h2>
+      <h3>公众号排版器收费吗？</h3>
+      <p>免费。打开网页就能用，不需要注册登录，代码在GitHub开源。</p>
+      <h3>粘贴到公众号以后格式会乱吗？</h3>
+      <p>复制时样式会一起写进内容里，粘贴到微信公众号编辑器后，标题、引用、列表、代码块和表格都会保留排版效果。</p>
+      <h3>文章里的图片怎么处理？</h3>
+      <p>截图可以直接粘贴，图片文件可以直接拖进编辑器。图片会自动压缩并保存在你的浏览器里，刷新页面也不会丢；复制到公众号时会自动转换成公众号能识别的格式，不用先上传图床。</p>
+      <h3>我写的内容会上传到服务器吗？</h3>
+      <p>不会。文章和图片都只保存在你自己的浏览器里（localStorage和IndexedDB），换浏览器或清除浏览器数据前，记得把重要文章另存一份。</p>
+      <h3>能直接粘贴飞书、Notion或Word里的内容吗？</h3>
+      <p>能。从飞书、Notion、Word等富文本复制的内容，粘贴时会自动转换成Markdown，标题、列表、加粗等格式会保留下来。</p>
+      <h3>手机上能用吗？</h3>
+      <p>能，页面适配手机和平板。长文排版还是建议在电脑上操作，左右分栏看预览更方便。</p>
+
+      <p class="seo-intro__foot">由<a href="https://www.huasheng.ai/">花生</a>开发，源码开放在<a href="https://github.com/alchaincyf/huasheng_editor" rel="noopener">GitHub</a>。</p>
+    </div>
+  </section>
 
   <!-- 加载脚本。styles.js/app.js 也要加 defer——不然它们本来就在文档最后，
        会比上面已经 defer 的 markdown-it/vue 先同步执行，app.js 一开头就要用
