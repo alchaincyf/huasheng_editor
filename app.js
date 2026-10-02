@@ -676,7 +676,7 @@ const editorApp = createApp({
 
     // 初始化 markdown-it
     const md = window.markdownit({
-      html: true,
+      html: false,
       linkify: true,
       typographer: false,  // 禁用 typographer 以避免智能引号干扰加粗标记
       highlight: function (str, lang) {
