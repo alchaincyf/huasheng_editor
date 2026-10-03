@@ -1929,6 +1929,7 @@ const markdown = \`![图片](img://\${imageId})\`;
 
           // 自动保存到历史记录
           this.saveToHistory();
+          this.trackCopy('wechat');
 
           setTimeout(() => {
             this.copySuccess = false;
@@ -1979,6 +1980,7 @@ const markdown = \`![图片](img://\${imageId})\`;
           this.copyXSuccess = true;
           this.showToast('已复制 X Articles 格式', 'success');
           this.saveToHistory();
+          this.trackCopy('x');
 
           setTimeout(() => {
             this.copyXSuccess = false;
@@ -2023,6 +2025,7 @@ const markdown = \`![图片](img://\${imageId})\`;
           this.copyXSuccess = true;
           this.showToast('已复制 X Articles 格式（降级模式）', 'success');
           this.saveToHistory();
+          this.trackCopy('x');
           setTimeout(() => { this.copyXSuccess = false; }, 2000);
         } else {
           this.showToast('复制失败', 'error');
@@ -2256,6 +2259,7 @@ const markdown = \`![图片](img://\${imageId})\`;
           this.copySuccess = true;
           this.showToast('复制成功（降级模式）', 'success');
           this.saveToHistory();
+          this.trackCopy('wechat');
           setTimeout(() => { this.copySuccess = false; }, 2000);
         } else {
           this.showToast('复制失败', 'error');
@@ -3435,6 +3439,11 @@ const markdown = \`![图片](img://\${imageId})\`;
     },
 
     // 保存当前文章到历史记录
+    // 埋点：复制成功是用户来排版器的目的。target = wechat / x，style = 当前主题。口径见 gefei-seo-skill/analytics/埋点与分析方案.md
+    trackCopy(target) {
+      try { window.gtag && window.gtag('event', 'copy_output', { tool: target, style: this.currentStyle }); } catch (e) {}
+    },
+
     saveToHistory() {
       const content = this.markdownInput;
       if (!content || !content.trim()) {

@@ -99,7 +99,8 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
-    gtag('config', 'G-5FTJSWC1Z5');
+    // 只统计正式域名：别人部署的克隆版和本地开发不往这里发数据
+    if (location.hostname === 'editor.huasheng.ai') gtag('config', 'G-5FTJSWC1Z5');
   </script>
 
   <!-- Favicon -->
