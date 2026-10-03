@@ -2315,10 +2315,20 @@ const markdown = \`![图片](img://\${imageId})\`;
 
       // 后备方案：尝试通过 URL 获取图片（加 AbortController 超时）
       try {
+        // 安全校验：仅允许 http/https 协议，禁止访问内网及云元数据地址，防止 SSRF
+        const parsedUrl = new URL(src, window.location.href);
+        const hostname = parsedUrl.hostname.toLowerCase();
+        const isPrivateHost =
+          /^(localhost|127\.|0\.|169\.254\.|10\.|192\.168\.|::1)/.test(hostname) ||
+          /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+        if (!/^https?:$/.test(parsedUrl.protocol) || isPrivateHost) {
+          throw new Error(`不允许的图片地址: ${src}`);
+        }
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-        const response = await fetch(src, {
+        const response = await fetch(parsedUrl.href, {
           mode: 'cors',
           cache: 'default',
           signal: controller.signal
