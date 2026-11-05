@@ -1120,20 +1120,35 @@ const markdown = \`![图片](img://\${imageId})\`;
       const pv = this.$refs.previewScroll;
       if (!ta || !pv) return;
 
+      this._scrollSource = null;
       this._syncLock = false;
-      // scroll 同步：加锁防止两侧互相触发死循环
+
+      // 跟踪用户主动触发滚动的区域（鼠标移入、滚轮、触控），彻底杜绝双向互扯
+      const setSourceEditor = () => { this._scrollSource = 'editor'; };
+      const setSourcePreview = () => { this._scrollSource = 'preview'; };
+
+      ta.addEventListener('mouseenter', setSourceEditor);
+      ta.addEventListener('wheel', setSourceEditor, { passive: true });
+      ta.addEventListener('touchstart', setSourceEditor, { passive: true });
+
+      pv.addEventListener('mouseenter', setSourcePreview);
+      pv.addEventListener('wheel', setSourcePreview, { passive: true });
+      pv.addEventListener('touchstart', setSourcePreview, { passive: true });
+
+      // scroll 同步：加锁并结合主动交互源判定，防止两侧互相触发死循环
       ta.addEventListener('scroll', () => {
-        if (this._syncLock) return;
+        if (this._syncLock || this._scrollSource === 'preview') return;
         this._syncLock = true;
         this.syncPreviewToEditor();
         requestAnimationFrame(() => { this._syncLock = false; });
-      });
+      }, { passive: true });
+
       pv.addEventListener('scroll', () => {
-        if (this._syncLock) return;
+        if (this._syncLock || this._scrollSource === 'editor') return;
         this._syncLock = true;
         this.syncEditorToPreview();
         requestAnimationFrame(() => { this._syncLock = false; });
-      });
+      }, { passive: true });
 
       // 点击/移动光标 → 预览跳转
       ta.addEventListener('click', () => this.jumpPreviewToCaret());
@@ -1197,14 +1212,32 @@ const markdown = \`![图片](img://\${imageId})\`;
       const pv = this.$refs.previewScroll;
       const els = this.sourceLineEls();
       if (!els.length) return;
-      // 找到滚动到顶部的锚点元素
-      let top = els[0];
+
+      // 线性插值计算当前预览位置对应的源行号
+      let lo = els[0];
+      let hi = null;
+      const targetTop = pv.scrollTop + 12;
       for (const o of els) {
-        if (this.elTopInScroll(o.el, pv) <= pv.scrollTop + 6) top = o;
-        else break;
+        const top = this.elTopInScroll(o.el, pv);
+        if (top <= targetTop) {
+          lo = o;
+        } else {
+          hi = o;
+          break;
+        }
       }
+
+      let line = lo.line;
+      if (hi) {
+        const loTop = this.elTopInScroll(lo.el, pv);
+        const hiTop = this.elTopInScroll(hi.el, pv);
+        const range = hiTop - loTop;
+        const frac = range > 0 ? Math.min(1, Math.max(0, (targetTop - loTop) / range)) : 0;
+        line = lo.line + frac * (hi.line - lo.line);
+      }
+
       const denom = ta.scrollHeight - ta.clientHeight;
-      ta.scrollTop = (top.line / this.totalSourceLines()) * denom;
+      ta.scrollTop = (line / this.totalSourceLines()) * denom;
     },
 
     caretSourceLine() {
@@ -1222,6 +1255,7 @@ const markdown = \`![图片](img://\${imageId})\`;
 
     jumpPreviewToCaret() {
       const pv = this.$refs.previewScroll;
+      this._scrollSource = 'editor';
       if (!pv) return;
       const line = this.caretSourceLine();
       this._syncLock = true;
@@ -1244,6 +1278,7 @@ const markdown = \`![图片](img://\${imageId})\`;
       const line = parseInt(node.getAttribute('data-source-line'), 10);
       if (isNaN(line)) return;
       const ta = this.$refs.editorTextarea;
+      this._scrollSource = 'preview';
       const offset = this.lineStartOffset(line);
       this._syncLock = true;
       ta.focus();
