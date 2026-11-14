@@ -536,8 +536,10 @@ function isCjkPunctuation(charCode) {
   }
 
   return (
-    (charCode >= 0x3000 && charCode <= 0x303F) ||  // CJK 标点符号（。、，；：！？等）
-    (charCode >= 0xFF01 && charCode <= 0xFF0F) ||  // 全角标点（！＂＃等）
+    (charCode >= 0x2010 && charCode <= 0x2027) ||  // 中文弯引号 “ ” ‘ ’、破折号 —、省略号 … 等通用标点
+    (charCode >= 0x2030 && charCode <= 0x205E) ||  // 千分号、参考号等标点
+    (charCode >= 0x3000 && charCode <= 0x303F) ||  // CJK 标点符号（。、，；：！？《》「」【】等）
+    (charCode >= 0xFF01 && charCode <= 0xFF0F) ||  // 全角标点（！＂＃（）等）
     (charCode >= 0xFF1A && charCode <= 0xFF20) ||  // 全角标点（：；等）
     (charCode >= 0xFF3B && charCode <= 0xFF40) ||  // 全角标点（［＼等）
     (charCode >= 0xFF5B && charCode <= 0xFF65) ||  // 全角标点（｛｜等）
@@ -1274,11 +1276,6 @@ const markdown = \`![图片](img://\${imageId})\`;
       content = content.replace(/\*\*\s+\*\*/g, ' ');
       // 处理 **** 或更多连续星号（通常是格式错误）-> 移除
       content = content.replace(/\*{4,}/g, '');
-      // 处理 word** 或 **word 紧贴标点的情况（中文标点）
-      // 在中文右标点前的 ** 后添加零宽空格，帮助解析
-      content = content.replace(/\*\*([）」』》〉】〕〗］｝"'。，、；：？！])/g, '**\u200B$1');
-      // 在中文左标点后的 ** 前添加零宽空格
-      content = content.replace(/([（「『《〈【〔〖［｛"'])\*\*/g, '$1\u200B**');
       // 同样处理下划线格式
       content = content.replace(/__\s+__/g, ' ');
       content = content.replace(/_{4,}/g, '');
@@ -1632,6 +1629,47 @@ const markdown = \`![图片](img://\${imageId})\`;
       });
     },
 
+    /**
+     * 扁平化列表项，兼容公众号后台粘贴限制。
+     * 仅拆解直接归属当前 <li> 的 <p> 包裹层并折叠非 <pre> 换行，
+     * 保留 strong/em/code/a/span 等全部内联样式，避免清空富文本结构或破坏代码块与嵌套列表。
+     */
+    flattenListItems(doc) {
+      const normalizeWhitespace = (node) => {
+        for (let child = node.firstChild; child; child = child.nextSibling) {
+          if (child.nodeType === Node.TEXT_NODE) {
+            child.nodeValue = child.nodeValue.replace(/\r?\n/g, ' ').replace(/\s{2,}/g, ' ');
+          } else if (child.nodeType === Node.ELEMENT_NODE && !/^(PRE|UL|OL)$/i.test(child.tagName)) {
+            normalizeWhitespace(child);
+          }
+        }
+      };
+
+      const trimBoundaryText = (li, edgeProp, pattern) => {
+        const edge = li[edgeProp];
+        if (!edge || edge.nodeType !== Node.TEXT_NODE) return;
+        edge.nodeValue = edge.nodeValue.replace(pattern, '');
+        if (!edge.nodeValue) li.removeChild(edge);
+      };
+
+      Array.from(doc.querySelectorAll('li')).reverse().forEach(li => {
+        Array.from(li.querySelectorAll('p')).forEach(p => {
+          if (p.closest('li') !== li) return;
+          const prev = p.previousSibling;
+          if (prev && !(prev.nodeType === Node.TEXT_NODE && !prev.nodeValue.trim())) {
+            p.parentNode.insertBefore(doc.createTextNode(' '), p);
+          }
+          const frag = doc.createDocumentFragment();
+          while (p.firstChild) frag.appendChild(p.firstChild);
+          p.parentNode.replaceChild(frag, p);
+        });
+
+        normalizeWhitespace(li);
+        trimBoundaryText(li, 'firstChild', /^\s+/);
+        trimBoundaryText(li, 'lastChild', /\s+$/);
+      });
+    },
+
     convertToTable(doc, grid, columns) {
       // 获取所有图片包装器
       const imgWrappers = Array.from(grid.children);
@@ -1878,16 +1916,8 @@ const markdown = \`![图片](img://\${imageId})\`;
           }
         });
 
-        // 列表项扁平化
-        const listItems = doc.querySelectorAll('li');
-        listItems.forEach(li => {
-          let text = li.textContent || li.innerText;
-          text = text.replace(/\n/g, ' ').replace(/\r/g, ' ').replace(/\s+/g, ' ').trim();
-          li.innerHTML = '';
-          li.textContent = text;
-          const currentStyle = li.getAttribute('style') || '';
-          li.setAttribute('style', currentStyle);
-        });
+        // 列表项扁平化（保留加粗/斜体/行内代码/链接等内联样式）
+        this.flattenListItems(doc);
 
         // 深色模式适配：调整引用块样式，使用透明黑色让微信自动转换
         const blockquotes = doc.querySelectorAll('blockquote');
@@ -2458,14 +2488,17 @@ const markdown = \`![图片](img://\${imageId})\`;
           }
         }
 
-        // 修复 * 标记：CJK 标点（如中文逗号、句号）不应阻止加粗闭合
-        // 例如 **提示词妙招，** 中的 "，" 是 CJK 标点，不应视为 ASCII 标点
+        // 修复 * 标记：只要一侧为中文字符或中文标点（含 “ ” ‘ ’ （ ） ， 。 ！ ？ 等），
+        // 且非空白侧，即可正常作为加粗/斜体开闭边界（解决 **“中文”** 与 “**80%**” 解析失败问题）
         if (marker === 0x2A /* * */) {
-          if (isLastPunctChar && isCjkPunctuation(lastChar) && !utils.isMdAsciiPunct(lastChar)) {
-            isLastPunctChar = false;
-          }
-          if (isNextPunctChar && isCjkPunctuation(nextChar) && !utils.isMdAsciiPunct(nextChar)) {
-            isNextPunctChar = false;
+          const hasCjkContext =
+            isCjkLetter(lastChar) ||
+            isCjkPunctuation(lastChar) ||
+            isCjkLetter(nextChar) ||
+            isCjkPunctuation(nextChar);
+          if (hasCjkContext) {
+            if (!isNextWhiteSpace) isNextPunctChar = false;
+            if (!isLastWhiteSpace) isLastPunctChar = false;
           }
         }
 
