@@ -1132,6 +1132,8 @@ const markdown = \`![图片](img://\${imageId})\`;
       ta.addEventListener('mouseenter', setSourceEditor);
       ta.addEventListener('wheel', setSourceEditor, { passive: true });
       ta.addEventListener('touchstart', setSourceEditor, { passive: true });
+      // 键盘翻页/打字也会滚动编辑区；鼠标停在预览区时不能因此丢掉同步
+      ta.addEventListener('keydown', setSourceEditor);
 
       pv.addEventListener('mouseenter', setSourcePreview);
       pv.addEventListener('wheel', setSourcePreview, { passive: true });
@@ -1817,9 +1819,11 @@ const markdown = \`![图片](img://\${imageId})\`;
         return;
       }
 
+      // doc 声明在 try 外：catch 里的降级复制要用到它（声明在 try 内时 catch 会抛 ReferenceError，#13）
+      let doc = null;
       try {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(this.renderedContent, 'text/html');
+        doc = parser.parseFromString(this.renderedContent, 'text/html');
 
         // 将图片网格转换为 table 布局（公众号兼容）
         this.convertGridToTable(doc);
